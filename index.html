@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Граффити Калькулятор — v7</title>
+<style>
+  :root{
+    --bg:#0b0b14; --panel:#14141f; --panel2:#1b1b2a; --line:#2a2a3e;
+    --neon:#00e5ff; --neon2:#ff2ea6; --lime:#c6ff00;
+    --txt:#e8e8f2; --dim:#9a9ab0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,46,166,.14), transparent 60%),
+      radial-gradient(1000px 500px at -10% 30%, rgba(0,229,255,.12), transparent 60%),
+      var(--bg);
+    color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    padding:14px 12px 60px; max-width:720px; margin:0 auto;
+  }
+  h1{font-size:22px; margin:6px 0 2px; letter-spacing:.5px;
+     color:#fff; text-shadow:0 0 12px rgba(0,229,255,.55), 0 0 30px rgba(255,46,166,.30);}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:14px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+         padding:14px; margin-bottom:14px; box-shadow:0 0 24px rgba(0,229,255,.05);}
+  h2{font-size:15px; margin:0 0 10px; color:var(--neon);
+     text-shadow:0 0 10px rgba(0,229,255,.45); text-transform:uppercase; letter-spacing:1px;}
+  label{display:block; font-size:12px; color:var(--dim); margin:10px 0 4px;}
+  input[type=number], select{
+    width:100%; padding:11px 12px; font-size:15px; color:var(--txt);
+    background:var(--panel2); border:1px solid var(--line); border-radius:10px; outline:none;
+    appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300e5ff' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center;
+  }
+  input[type=number]:focus, select:focus{border-color:var(--neon); box-shadow:0 0 10px rgba(0,229,255,.35);}
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  .filewrap{position:relative; display:block;}
+  .filebtn{
+    display:block; text-align:center; padding:13px; border-radius:12px; font-size:15px; font-weight:600;
+    color:#0b0b14; background:linear-gradient(90deg, var(--neon), var(--neon2));
+    box-shadow:0 0 18px rgba(0,229,255,.4), 0 0 30px rgba(255,46,166,.25); cursor:pointer;
+  }
+  .filebtn input{display:none;}
+  .btn{
+    display:inline-block; padding:11px 16px; border-radius:10px; font-size:14px; font-weight:600;
+    background:var(--panel2); color:var(--neon); border:1px solid rgba(0,229,255,.5);
+    cursor:pointer; box-shadow:0 0 10px rgba(0,229,255,.2); user-select:none;
+  }
+  .btn.big{
+    width:100%; text-align:center; font-size:17px; padding:15px; color:#0b0b14;
+    background:linear-gradient(90deg,var(--lime),var(--neon)); border:none;
+    box-shadow:0 0 22px rgba(198,255,0,.35), 0 0 34px rgba(0,229,255,.3);
+  }
+  .btn.ghost{color:var(--dim); border-color:var(--line); box-shadow:none;}
+  .hint{font-size:12px; color:var(--dim); margin-top:8px; line-height:1.45;}
+  .note{font-size:12px; color:var(--neon2); margin-top:8px; line-height:1.45;}
+  #wallWrap{position:relative; margin-top:10px;}
+  canvas{display:block; width:100%; border:1px solid rgba(0,229,255,.45); border-radius:10px;
+         background:#10101c; touch-action:none; box-shadow:0 0 20px rgba(0,229,255,.12);}
+  .surface{display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;}
+  .chip{flex:1; min-width:90px; text-align:center; padding:9px 6px; font-size:12.5px;
+        border:1px solid var(--line); border-radius:10px; color:var(--dim); cursor:pointer; background:var(--panel2);}
+  .chip.on{border-color:var(--neon); color:var(--neon); box-shadow:0 0 12px rgba(0,229,255,.35); font-weight:700;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px;}
+  th{color:var(--dim); font-weight:600; text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); font-size:12px;}
+  td{padding:7px 6px; border-bottom:1px solid rgba(42,42,62,.5);}
+  .sw{display:inline-block; width:20px; height:20px; border-radius:5px; vertical-align:middle;
+      border:1px solid rgba(255,255,255,.25); box-shadow:0 0 8px rgba(255,255,255,.15);}
+  .total{margin-top:12px; padding:12px; border-radius:10px; background:var(--panel2);
+         border:1px solid rgba(198,255,0,.4); font-size:15px; box-shadow:0 0 16px rgba(198,255,0,.12);}
+  .total b{color:var(--lime);}
+  .err{color:var(--neon2); font-size:13px; margin-top:8px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<h1>ГРАФФИТИ КАЛЬКУЛЯТОР</h1>
+<div class="sub">Расчёт баллонов по эскизу • v7</div>
+
+<div class="panel">
+  <h2>Эскиз</h2>
+  <label class="filewrap"><span class="filebtn">Загрузить эскиз<input type="file" id="file" accept="image/*"></span></label>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <span class="btn" id="centerBtn">По центру</span>
+  </div>
+  <div class="hint">Один палец — перетащить, два пальца — увеличить/уменьшить. На компьютере — мышь и колёсико.</div>
+</div>
+
+<div class="panel">
+  <h2>Стена</h2>
+  <div class="row">
+    <div><label>Ширина, м</label><input type="number" id="wallW" value="3" step="0.1" min="0.5"></div>
+    <div><label>Высота, м</label><input type="number" id="wallH" value="2" step="0.1" min="0.5"></div>
+  </div>
+  <label>Поверхность</label>
+  <div class="surface" id="surfaceChips">
+    <div class="chip on" data-s="smooth">Гладкая<br><span style="opacity:.6">1 слой</span></div>
+    <div class="chip" data-s="rough">Шероховатая<br><span style="opacity:.6">2 слоя</span></div>
+    <div class="chip" data-s="raw">Неподготовленная<br><span style="opacity:.6">2 слоя</span></div>
+  </div>
+  <div class="hint" id="surfaceHint">Подготовленная стена: базовый расход краски.</div>
+  <div id="wallWrap"><canvas id="wall"></canvas></div>
+</div>
+
+<div class="panel">
+  <h2>Краска</h2>
+  <label>Производитель</label>
+  <select id="brand"></select>
+  <label>Объём баллона</label>
+  <select id="vol"></select>
+  <div class="note" id="volNote" style="display:none;"></div>
+  <div class="row">
+    <div><label>Цена баллона, ₽</label><input type="number" id="price" step="1"></div>
+    <div><label>Расход, м²/баллон</label><input type="number" id="cov" step="0.05"></div>
+  </div>
+  <div class="hint">Цена и расход подставляются автоматически, можно править под своего дилера.</div>
+</div>
+
+<button class="btn big" id="calcBtn">Рассчитать</button>
+<div class="err" id="err" style="display:none;"></div>
+
+<div class="panel hidden" id="resultPanel">
+  <h2>Результат</h2>
+  <div id="resultBody"></div>
+</div>
+
+<div class="panel hidden" id="previewPanel">
+  <h2>Превью на стене</h2>
+  <canvas id="preview"></canvas>
+  <div class="hint">Цвета приведены к палитре бренда, светота исходника сохранена.</div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- ПАЛИТРЫ И ЦЕНЫ (ноябрь 2026, средние по магазинам РФ) ---------- */
+const BRANDS = {
+  arton: { name:"Arton", volNote:"",
+    volumes:{ "400":{cov:1.5, price:530} },
+    colors:[
+      ["A101","Chicken","#E8B33C"],["A102","Lemon Yellow","#F4E04D"],["A305","Orange","#F26A1B"],
+      ["A313","Classic Red","#D01F26"],["A318","Dark Red","#8C1B21"],["A402","Pink","#E86CA0"],
+      ["A408","Fuchsia","#C4227E"],["A505","Light Green","#7FBF3F"],["A511","Green","#1F8A3B"],
+      ["A512","Dark Green","#14532D"],["A602","Light Blue","#5BC2E7"],["A608","Blue","#1C5FA8"],
+      ["A610","Dark Blue","#1B2E6B"],["A614","Violet","#6C3FA0"],["A701","Brown","#6B4423"],
+      ["A704","Beige","#D8C39A"],["A801","Black","#1C1C1C"],["A802","Grey","#8A8A8A"],
+      ["A803","Light Grey","#C9C9C9"],["A804","White","#F2F2EE"]
+    ]},
+  mtn94: { name:"MTN 94", volNote:"750 мл у Montana Colors — отдельные линейки (Mad Maxxx, XXXL, Krink) с ограниченной палитрой: учитывайте это при закупке.",
+    volumes:{ "400":{cov:1.5, price:700}, "750":{cov:2.8, price:1250} },
+    colors:[
+      ["RV-9010","Vintage White","#EFEDE3"],["RV-9005","Black","#2B2B2B"],["RV-7001","Light Grey","#B9B7AE"],
+      ["RV-7004","Grey","#7C7A74"],["RV-1015","Lemon Yellow","#F5D515"],["RV-1024","Signal Yellow","#F2B705"],
+      ["RV-1032","Bright Orange","#F07818"],["RV-1036","Orange","#E85D04"],["RV-2008","Red","#C62828"],
+      ["RV-2016","Dark Red","#8E1B26"],["RV-3003","Rose Pink","#E77FA8"],["RV-3005","Fuchsia","#B9268A"],
+      ["RV-4005","Grass Green","#4C9A2A"],["RV-4008","Dark Green","#1F5B34"],["RV-5007","Light Blue","#57B8E0"],
+      ["RV-5010","Blue","#1F5FA9"],["RV-5013","Dark Blue","#1B2C63"],["RV-6001","Violet","#6B3FA0"],
+      ["RV-8006","Brown","#6B4423"],["RV-8015","Beige","#D9C69E"]
+    ]},
+  black: { name:"Montana BLACK", volNote:"Ultra Wide 750 мл — узкая линейка (~12 базовых цветов) для широких линий и заливок.",
+    volumes:{ "400":{cov:1.5, price:700}, "750":{cov:2.8, price:1650} },
+    colors:[
+      ["BLK-9105","White","#F1EFE8"],["BLK-9005","Black","#232323"],["BLK-9100","Grey","#8F8D88"],
+      ["BLK-9118","Light Grey","#C7C5BF"],["BLK-0000","Chrome Silver","#BFC2C6"],
+      ["BLK-0020","Gold","#C8A24A"],["BLK-1002","Yellow","#F6D60A"],["BLK-1006","Yellow Orange","#F5A300"],
+      ["BLK-0028","Orange","#EF6A1E"],["BLK-0044","Red Orange","#E1450A"],["BLK-0060","Red","#C3232B"],
+      ["BLK-0068","Dark Red","#8C1B26"],["BLK-0122","Pink","#E879A9"],["BLK-0138","Magenta","#B5258C"],
+      ["BLK-0150","Green","#2E8B3C"],["BLK-0168","Dark Green","#1C4F2E"],["BLK-0204","Sky Blue","#55B8DF"],
+      ["BLK-0214","Blue","#1F5CA9"],["BLK-0220","Purple","#4B2C86"],["BLK-0240","Violet","#6B3FA0"]
+    ]},
+  molotow: { name:"Molotow Premium", volNote:"Burner 600 мл — в основном хром, золото и медь; цветовая линейка ограничена.",
+    volumes:{ "400":{cov:1.5, price:700}, "600":{cov:2.2, price:1600} },
+    colors:[
+      ["410","Signal White","#F3F2ED"],["401","Snow White","#FBFBF8"],["402","Traffic Grey","#8E8C86"],
+      ["404","Neutral Grey","#5C5A56"],["400","Pure Black","#1F1F1F"],
+      ["215","Chromium Yellow","#F6CE1B"],["220","Sun Yellow","#F8C300"],["226","Fire Orange","#EE7114"],
+      ["230","Carmine Red","#C22233"],["235","Dark Red","#8E1B26"],["242","Pink","#E879A9"],
+      ["247","Magenta","#B5258C"],["260","Grass Green","#3F9A3F"],["264","Dark Green","#1F5B34"],
+      ["268","Deep Sea Blue","#1F4E79"],["274","Azure Blue","#3E9BD6"],["278","Royal Blue","#1F3F8F"],
+      ["282","Violet","#6B3FA0"],["270","Lilac Purple","#8E6BB0"]
+    ]},
+  loop: { name:"Loop", volNote:"Maxi 600 мл — 17 цветов в линейке.",
+    volumes:{ "400":{cov:1.5, price:560}, "600":{cov:2.2, price:698} },
+    colors:[
+      ["401","White","#F1EFE9"],["400","Black","#222222"],["420","Grey","#8C8C88"],
+      ["421","Light Grey","#C8C6C0"],["101","Yellow","#F5D611"],["105","Orange","#EE6D1B"],
+      ["201","Red","#C22430"],["205","Dark Red","#8C1C26"],["301","Pink","#E77FA8"],
+      ["303","Magenta","#B8258C"],["501","Green","#2E8B3C"],["505","Dark Green","#1D5030"],
+      ["601","Light Blue","#54B7DF"],["605","Blue","#1F5CA9"],["610","Dark Blue","#1C2B60"],
+      ["620","Purple","#5E3A94"],["801","Brown","#6B4423"],["803","Beige","#D9C69E"]
+    ]},
+  flame: { name:"Flame", volNote:"",
+    volumes:{ "400":{cov:1.5, price:550}, "600":{cov:2.2, price:890} },
+    colors:[
+      ["9001","White","#F2F1EB"],["9005","Black","#242424"],["7004","Grey","#8E8C88"],
+      ["1018","Yellow","#F5D412"],["1033","Orange","#EE6F1D"],["2004","Red","#C4232E"],
+      ["2008","Dark Red","#8D1C26"],["3002","Pink","#E77EA6"],["3010","Magenta","#B5258C"],
+      ["5004","Green","#2F8B3C"],["5008","Dark Green","#1E5230"],["6005","Light Blue","#53B6DE"],
+      ["6010","Blue","#1F5BA8"],["6020","Dark Blue","#1B2A5E"],["6025","Purple","#5E3A94"],
+      ["8002","Brown","#6B4423"],["8010","Beige","#DAC79F"]
+    ]}
+};
+
+const SURFACES = {
+  smooth:{ label:"гладкая (подготовленная стена)", layers:1, k:1.0,
+    hint:"Подготовленная стена: базовый расход краски." },
+  rough:{ label:"шероховатая (штукатурка, бетон)", layers:2, k:1.15,
+    hint:"Штукатурка/бетон впитывает краску: 2 слоя, расход +15%." },
+  raw:{ label:"неподготовленная", layers:2, k:1.35,
+    hint:"Необработанная поверхность: 2 слоя, расход +35%. Рекомендуем прогрунтовать — иначе баллонов уйдёт больше." }
+};
+
+/* ---------- Состояние ---------- */
+let surface = "smooth";
+let img = null;                 // исходник эскиза
+let tr = null;                  // {k: м/px эскиза, ox, oy: м}
+let pointers = new Map();
+let pinchStart = null;
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const canvas = $("wall"), ctx = canvas.getContext("2d");
+const previewC = $("preview"), pctx = previewC.getContext("2d");
+const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+function wallWH(){
+  const w = parseFloat($("wallW").value) || 3;
+  const h = parseFloat($("wallH").value) || 2;
+  return [Math.max(0.5, w), Math.max(0.5, h)];
+}
+function curBrand(){ return BRANDS[$("brand").value]; }
+function curVol(){ return $("vol").value; }
+
+/* ---------- Селекты ---------- */
+(function initSelects(){
+  const bs = $("brand");
+  for (const key in BRANDS){
+    const o = document.createElement("option");
+    o.value = key; o.textContent = BRANDS[key].name;
+    bs.appendChild(o);
+  }
+  bs.addEventListener("change", () => { fillVols(); autoFill(); });
+  $("vol").addEventListener("change", autoFill);
+  fillVols(); autoFill();
+})();
+
+function fillVols(){
+  const vs = $("vol"); vs.innerHTML = "";
+  const note = curBrand().volNote;
+  $("volNote").style.display = note ? "block" : "none";
+  $("volNote").textContent = note;
+  const vols = Object.keys(curBrand().volumes);
+  vols.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = v + " мл" + (v === "750" ? " (Ultra Wide)" : v === "600" ? " (большой)" : "");
+    vs.appendChild(o);
+  });
+}
+function autoFill(){
+  const v = curBrand().volumes[curVol()];
+  $("price").value = v.price;
+  $("cov").value = v.cov;
+}
+
+/* ---------- Поверхность ---------- */
+$("surfaceChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip"); if (!chip) return;
+  document.querySelectorAll("#surfaceChips .chip").forEach(c => c.classList.remove("on"));
+  chip.classList.add("on");
+  surface = chip.dataset.s;
+  $("surfaceHint").textContent = SURFACES[surface].hint;
+});
+
+/* ---------- Загрузка эскиза ---------- */
+$("file").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    const i = new Image();
+    i.onload = () => { img = i; centerSketch(); drawWall(); };
+    i.src = ev.target.result;
+  };
+  r.readAsDataURL(f);
+  e.target.value = "";
+});
+$("centerBtn").addEventListener("click", () => { if (img){ centerSketch(); drawWall(); } });
+
+function centerSketch(){
+  const [W, H] = wallWH();
+  const k = Math.min(W / img.width, H / img.height) * 0.95;
+  tr = { k, ox:(W - img.width * k) / 2, oy:(H - img.height * k) / 2 };
+}
+
+/* ---------- Холст стены + СЕТКА (по м², обе оси) ---------- */
+function drawWall(){
+  const [W, H] = wallWH();
+  const cw = canvas.clientWidth * dpr;
+  const ch = cw * H / W;
+  canvas.width = cw; canvas.height = ch;
+  canvas.style.height = (cw / dpr * H / W) + "px";
+
+  const ppm = cw / W; // пикселей устройства на метр
+
+  // фон
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = "#10101c";
+  ctx.fillRect(0, 0, cw, ch);
+
+  // сетка: вертикальные И горизонтальные линии каждый метр
+  ctx.lineWidth = Math.max(1, dpr * 0.7);
+  for (let i = 1; i < Math.round(W); i++){
+    ctx.strokeStyle = "rgba(0,229,255,0.28)";
+    ctx.beginPath(); ctx.moveTo(i * ppm, 0); ctx.lineTo(i * ppm, ch); ctx.stroke();
+  }
+  for (let j = 1; j < Math.round(H); j++){
+    ctx.strokeStyle = "rgba(0,229,255,0.28)";
+    ctx.beginPath(); ctx.moveTo(0, j * ppm); ctx.lineTo(cw, j * ppm); ctx.stroke();
+  }
+  // подписи метров по верхней и левой кромке
+  ctx.font = (11 * dpr) + "px sans-serif";
+  ctx.fillStyle = "rgba(0,229,255,0.75)";
+  for (let i = 1; i < Math.round(W); i++)
+    ctx.fillText(i + " м", i * ppm + 4 * dpr, 14 * dpr);
+  for (let j = 1; j < Math.round(H); j++)
+    ctx.fillText(j + " м", 5 * dpr, j * ppm + 14 * dpr);
+
+  // эскиз
+  if (img && tr){
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 12 * dpr;
+    ctx.drawImage(img,
+      tr.ox * ppm, tr.oy * ppm,
+      img.width * tr.k * ppm, img.height * tr.k * ppm);
+    ctx.restore();
+  }
+}
+
+/* ---------- Жесты ---------- */
+function pt(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX - r.left) * dpr, y:(e.clientY - r.top) * dpr };
+}
+canvas.addEventListener("pointerdown", e => {
+  if (!img) return;
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, pt(e));
+  if (pointers.size === 2) pinchStart = null;
+  e.preventDefault();
+});
+canvas.addEventListener("pointermove", e => {
+  if (!img || !pointers.has(e.pointerId)) return;
+  const [W, H] = wallWH();
+  const ppm = canvas.clientWidth * dpr / W;
+  const p = pt(e), prev = pointers.get(e.pointerId);
+  pointers.set(e.pointerId, p);
+
+  if (pointers.size === 1){
+    tr.ox += (p.x - prev.x) / ppm;
+    tr.oy += (p.y - prev.y) / ppm;
+    drawWall();
+  } else if (pointers.size === 2){
+    const ps = [...pointers.values()];
+    const d = Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y);
+    const mid = { x:(ps[0].x + ps[1].x) / 2 / ppm, y:(ps[0].y + ps[1].y) / 2 / ppm };
+    if (pinchStart){
+      const ratio = d / pinchStart.d;
+      const kNew = clampK(pinchStart.k * ratio);
+      const r = kNew / pinchStart.k;
+      tr.ox = mid.x - (mid.x - pinchStart.ox) * r;
+      tr.oy = mid.y - (mid.y - pinchStart.oy) * r;
+      tr.k = kNew;
+    } else {
+      pinchStart = { d, k:tr.k, ox:tr.ox, oy:tr.oy };
+    }
+    drawWall();
+  }
+  e.preventDefault();
+});
+function endPointer(e){
+  pointers.delete(e.pointerId); pinchStart = null;
+}
+canvas.addEventListener("pointerup", endPointer);
+canvas.addEventListener("pointercancel", endPointer);
+canvas.addEventListener("wheel", e => {
+  if (!img) return;
+  const [W, H] = wallWH();
+  const ppm = canvas.clientWidth * dpr / W;
+  const p = pt(e);
+  const wallPt = { x:p.x / ppm, y:p.y / ppm };
+  const kNew = clampK(tr.k * (e.deltaY < 0 ? 1.1 : 0.9));
+  const r = kNew / tr.k;
+  tr.ox = wallPt.x - (wallPt.x - tr.ox) * r;
+  tr.oy = wallPt.y - (wallPt.y - tr.oy) * r;
+  tr.k = kNew;
+  drawWall(); e.preventDefault();
+}, { passive:false });
+function clampK(k){
+  const [W, H] = wallWH();
+  return Math.min(Math.max(k, 0.05 * Math.min(W / img.width, H / img.height)),
+                  6 * Math.max(W / img.width, H / img.height));
+}
+
+/* Пересчёт холста при ресайзе БЕЗ сброса трансформации */
+let rzT = null;
+window.addEventListener("resize", () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(drawWall, 100);
+});
+
+/* ---------- Lab ---------- */
+function srgb2lab(r, g, b){
+  r /= 255; g /= 255; b /= 255;
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+  let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  let y = (r * 0.2126 + g * 0.7152 + b * 0.0722);
+  let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : (7.787 * t) + 16 / 116;
+  x = f(x); y = f(y); z = f(z);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+
+/* ---------- Расчёт ---------- */
+$("calcBtn").addEventListener("click", () => {
+  const err = $("err"); err.style.display = "none";
+  if (!img || !tr){ showErr("Сначала загрузите эскиз."); return; }
+
+  const [W, H] = wallWH();
+  // разрешение обработки: ~40 px на метр
+  let ppmP = 40;
+  const maxSide = 500;
+  if (Math.max(W, H) * ppmP > maxSide) ppmP = maxSide / Math.max(W, H);
+  const pw = Math.round(W * ppmP), ph = Math.round(H * ppmP);
+
+  const off = document.createElement("canvas");
+  off.width = pw; off.height = ph;
+  const octx = off.getContext("2d", { willReadFrequently:true });
+  octx.drawImage(img,
+    tr.ox * ppmP, tr.oy * ppmP,
+    img.width * tr.k * ppmP, img.height * tr.k * ppmP);
+  const data = octx.getImageData(0, 0, pw, ph).data;
+
+  const colors = curBrand().colors;
+  const labs = colors.map(c => srgb2lab(
+    parseInt(c[2].slice(1,3),16), parseInt(c[2].slice(3,5),16), parseInt(c[2].slice(5,7),16)));
+
+  const counts = new Array(colors.length).fill(0);
+  const mapped = new Uint8ClampedArray(pw * ph * 4);
+
+  const pxPerM2 = ppmP * ppmP; // пикселей в м²
+  let used = 0;
+
+  for (let i = 0; i < pw * ph; i++){
+    const a = data[i * 4 + 3];
+    const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+    if (a < 30) continue;
+    if (r > 240 && g > 240 && b > 240) continue; // белый фон не красим
+    let best = 0, bd = 1e12;
+    const [L, A, B] = srgb2lab(r, g, b);
+    for (let c = 0; c < labs.length; c++){
+      const d = (L - labs[c][0]) ** 2 + (A - labs[c][1]) ** 2 + (B - labs[c][2]) ** 2;
+      if (d < bd){ bd = d; best = c; }
+    }
+    counts[best]++;
+    used++;
+    // светота исходника сохраняем: масштабируем цвет палитры по яркости пикселя
+    const pr = parseInt(colors[best][2].slice(1,3),16),
+          pg = parseInt(colors[best][2].slice(3,5),16),
+          pb = parseInt(colors[best][2].slice(5,7),16);
+    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+    const plum = (0.299*pr + 0.587*pg + 0.114*pb) / 255;
+    const f = plum > 0.02 ? lum / plum : lum;
+    mapped[i*4]   = Math.min(255, pr * f);
+    mapped[i*4+1] = Math.min(255, pg * f);
+    mapped[i*4+2] = Math.min(255, pb * f);
+    mapped[i*4+3] = 255;
+  }
+
+  if (used === 0){ showErr("Не удалось распознать эскиз в границах стены. Проверьте, что эскиз наложен на стену, и попробуйте ещё раз."); return; }
+
+  const S = SURFACES[surface];
+  const factor = S.layers * S.k;
+  const price = parseFloat($("price").value) || 0;
+  const cov = parseFloat($("cov").value) || 1.5;
+
+  const rows = [];
+  let totalCans = 0, totalCost = 0;
+  for (let c = 0; c < colors.length; c++){
+    if (!counts[c]) continue;
+    const area = counts[c] / pxPerM2;
+    const cans = Math.ceil(area * factor / cov);
+    totalCans += cans;
+    const cost = cans * price;
+    totalCost += cost;
+    rows.push({ c, area, cans, cost });
+  }
+  rows.sort((a, b) => b.cans - a.cans);
+
+  let html = "<table><tr><th></th><th>Цвет</th><th>м²</th><th>Балл.</th><th>₽</th></tr>";
+  for (const r of rows){
+    const col = colors[r.c];
+    html += "<tr><td><span class='sw' style='background:" + col[2] + "'></span></td>" +
+            "<td>" + col[1] + " <span style='color:var(--dim);font-size:11px'>" + col[0] + "</span></td>" +
+            "<td>" + r.area.toFixed(2) + "</td><td>" + r.cans + "</td><td>" + r.cost + "</td></tr>";
+  }
+  html += "</table>";
+  html += "<div class='total'>Итого: <b>" + totalCans + " баллонов</b> • <b>" + totalCost + " ₽</b><br>" +
+          "<span style='font-size:12px;color:var(--dim)'>" + S.label + " — " + S.layers + " слой(а), поправка ×" + S.k +
+          " • поверхность " + (W * H).toFixed(1) + " м²</span></div>";
+  $("resultBody").innerHTML = html;
+  $("resultPanel").classList.remove("hidden");
+
+  // превью
+  const offP = document.createElement("canvas");
+  offP.width = pw; offP.height = ph;
+  offP.getContext("2d").putImageData(new ImageData(mapped, pw, ph), 0, 0);
+  const cw = previewC.clientWidth * dpr, ch2 = cw * H / W;
+  previewC.width = cw; previewC.height = ch2;
+  previewC.style.height = (cw / dpr * H / W) + "px";
+  pctx.imageSmoothingEnabled = true;
+  pctx.drawImage(offP, 0, 0, cw, ch2);
+  // сетка поверх превью
+  const ppmV = cw / W;
+  pctx.lineWidth = Math.max(1, dpr * 0.7);
+  for (let i = 1; i < Math.round(W); i++){
+    pctx.strokeStyle = "rgba(0,229,255,0.30)";
+    pctx.beginPath(); pctx.moveTo(i * ppmV, 0); pctx.lineTo(i * ppmV, ch2); pctx.stroke();
+  }
+  for (let j = 1; j < Math.round(H); j++){
+    pctx.strokeStyle = "rgba(0,229,255,0.30)";
+    pctx.beginPath(); pctx.moveTo(0, j * ppmV); pctx.lineTo(cw, j * ppmV); pctx.stroke();
+  }
+  $("previewPanel").classList.remove("hidden");
+  setTimeout(() => $("resultPanel").scrollIntoView({ behavior:"smooth", block:"start" }), 60);
+});
+
+function showErr(msg){
+  const err = $("err");
+  err.textContent = msg; err.style.display = "block";
+}
+
+drawWall();
+</script>
+</body>
+</html>
