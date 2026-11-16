@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Граффити Калькулятор — v7</title>
+<title>Граффити Калькулятор — v10.7</title>
+<meta name="theme-color" content="#0b0b14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
   :root{
     --bg:#0b0b14; --panel:#14141f; --panel2:#1b1b2a; --line:#2a2a3e;
@@ -65,6 +69,13 @@
   .chip{flex:1; min-width:90px; text-align:center; padding:9px 6px; font-size:12.5px;
         border:1px solid var(--line); border-radius:10px; color:var(--dim); cursor:pointer; background:var(--panel2);}
   .chip.on{border-color:var(--neon); color:var(--neon); box-shadow:0 0 12px rgba(0,229,255,.35); font-weight:700;}
+  .hdr{display:flex; gap:10px; margin-bottom:12px;}
+  .hdr > div{flex:1;}
+  .rate{font-size:12px; color:var(--dim); margin-bottom:14px; line-height:1.45;}
+  .avail{font-size:12px; color:var(--dim); margin-top:6px; line-height:1.45;}
+  .chip-pal{display:inline-block; padding:3px 8px; font-size:10.5px; font-weight:600; letter-spacing:.5px;
+        border:1px solid rgba(198,255,0,.55); color:var(--lime); border-radius:8px; margin-left:8px;
+        box-shadow:0 0 10px rgba(198,255,0,.2); vertical-align:middle; text-transform:none;}
   table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px;}
   th{color:var(--dim); font-weight:600; text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); font-size:12px;}
   td{padding:7px 6px; border-bottom:1px solid rgba(42,42,62,.5);}
@@ -75,151 +86,349 @@
   .total b{color:var(--lime);}
   .err{color:var(--neon2); font-size:13px; margin-top:8px;}
   .hidden{display:none;}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:10px;}
+  .litem{display:flex; align-items:center; gap:6px; font-size:12px;}
+  .code{color:var(--neon); font-weight:700;}
+  tr.crow{cursor:pointer;}
+  tr.cheap td{color:var(--lime);}
+  tr.cur td{background:rgba(0,229,255,.07);}
 </style>
 </head>
 <body>
 <h1>ГРАФФИТИ КАЛЬКУЛЯТОР</h1>
-<div class="sub">Расчёт баллонов по эскизу • v7</div>
+<div class="sub"><span data-i18n="sub">Расчёт баллонов по эскизу</span> • v10.7</div>
+
+<div class="hdr">
+  <div><label data-i18n="lang">Язык</label><select id="lang"></select></div>
+  <div><label data-i18n="country">Страна</label><select id="country"></select></div>
+</div>
+<div class="rate" id="rateLine"></div>
 
 <div class="panel">
-  <h2>Эскиз</h2>
-  <label class="filewrap"><span class="filebtn">Загрузить эскиз<input type="file" id="file" accept="image/*"></span></label>
-  <div style="margin-top:10px; display:flex; gap:8px;">
-    <span class="btn" id="centerBtn">По центру</span>
-  </div>
-  <div class="hint">Один палец — перетащить, два пальца — увеличить/уменьшить. На компьютере — мышь и колёсико.</div>
+  <h2 data-i18n="sketch">Эскиз</h2>
+  <label class="filewrap"><span class="filebtn"><span data-i18n="load">Загрузить эскиз</span><input type="file" id="file" accept="image/*"></span></label>
+  <div class="hint" data-i18n="hint_sketch">Один палец — перетащить, два пальца — увеличить/уменьшить. На компьютере — мышь и колёсико. Эскиз можно двигать прямо по стене.</div>
 </div>
 
 <div class="panel">
-  <h2>Стена</h2>
+  <h2 data-i18n="wall">Стена</h2>
   <div class="row">
-    <div><label>Ширина, м</label><input type="number" id="wallW" value="3" step="0.1" min="0.5"></div>
-    <div><label>Высота, м</label><input type="number" id="wallH" value="2" step="0.1" min="0.5"></div>
+    <div><label id="wLbl" data-i18n="w_lbl">Ширина, м</label><input type="number" id="wallW" value="3" step="0.1" min="0.5" max="60" inputmode="decimal"></div>
+    <div><label id="hLbl" data-i18n="h_lbl">Высота, м</label><input type="number" id="wallH" value="2" step="0.1" min="0.5" max="60" inputmode="decimal"></div>
   </div>
-  <label>Поверхность</label>
+  <label data-i18n="surface">Поверхность</label>
   <div class="surface" id="surfaceChips">
-    <div class="chip on" data-s="smooth">Гладкая<br><span style="opacity:.6">1 слой</span></div>
-    <div class="chip" data-s="rough">Шероховатая<br><span style="opacity:.6">2 слоя</span></div>
-    <div class="chip" data-s="raw">Неподготовленная<br><span style="opacity:.6">2 слоя</span></div>
+    <div class="chip on" data-s="smooth"><span data-i18n="s1">Подготовленная</span><br><span style="opacity:.6" data-i18n="s1sub">1 слой</span></div>
+    <div class="chip" data-s="raw"><span data-i18n="s2">Неподготовленная</span><br><span style="opacity:.6" data-i18n="s2sub">2 слоя</span></div>
   </div>
   <div class="hint" id="surfaceHint">Подготовленная стена: базовый расход краски.</div>
   <div id="wallWrap"><canvas id="wall"></canvas></div>
+  <div class="hint" data-i18n="gridhint">Клетка сетки — ровно 1 × 1 м.</div>
 </div>
 
 <div class="panel">
-  <h2>Краска</h2>
-  <label>Производитель</label>
+  <h2><span data-i18n="paint">Краска</span><span class="chip-pal" id="palChip">Палитра: ноябрь 2026</span></h2>
+  <label data-i18n="brand">Производитель</label>
   <select id="brand"></select>
-  <label>Объём баллона</label>
+  <div class="avail" id="availLine"></div>
+  <label data-i18n="volume">Объём баллона</label>
   <select id="vol"></select>
   <div class="note" id="volNote" style="display:none;"></div>
   <div class="row">
-    <div><label>Цена баллона, ₽</label><input type="number" id="price" step="1"></div>
-    <div><label>Расход, м²/баллон</label><input type="number" id="cov" step="0.05"></div>
+    <div><label id="priceLbl">Цена баллона, ₽</label><input type="number" id="price" step="1"></div>
+    <div><label data-i18n="cov_lbl">Расход, м²/баллон</label><input type="number" id="cov" step="0.05"></div>
   </div>
-  <div class="hint">Цена и расход подставляются автоматически, можно править под своего дилера.</div>
+  <div class="hint" data-i18n="hint_price">Цена и расход подставляются автоматически, можно править под своего дилера — правки запоминаются.</div>
 </div>
 
-<button class="btn big" id="calcBtn">Рассчитать</button>
+<button class="btn big" id="calcBtn" data-i18n="calc">Рассчитать</button>
 <div class="err" id="err" style="display:none;"></div>
 
 <div class="panel hidden" id="resultPanel">
-  <h2>Результат</h2>
+  <h2 data-i18n="result">Результат</h2>
   <div id="resultBody"></div>
 </div>
 
 <div class="panel hidden" id="previewPanel">
-  <h2>Превью на стене</h2>
+  <h2 data-i18n="preview">Превью на стене</h2>
   <canvas id="preview"></canvas>
-  <div class="hint">Цвета приведены к палитре бренда, светота исходника сохранена.</div>
+  <div class="legend" id="previewLegend"></div>
+  <div class="hint" data-i18n="preview_hint">Цвета приведены к палитре бренда, светота исходника сохранена. Микрозоны меньше 0,1 м² слиты с ближайшим цветом палитры.</div>
+</div>
+
+<div class="panel hidden" id="comparePanel">
+  <h2 data-i18n="compare">Сравнение бюджетов</h2>
+  <div id="compareBody"></div>
+  <div class="hint" data-i18n="compare_hint">Один и тот же эскиз прогнан через палитру каждого бренда. Клик по строке — переключить бренд.</div>
 </div>
 
 <script>
 "use strict";
 
-/* ---------- ПАЛИТРЫ И ЦЕНЫ (ноябрь 2026, средние по магазинам РФ) ---------- */
-const BRANDS = {
-  arton: { name:"Arton", volNote:"",
-    volumes:{ "400":{cov:1.5, price:530} },
-    colors:[
-      ["A101","Chicken","#E8B33C"],["A102","Lemon Yellow","#F4E04D"],["A305","Orange","#F26A1B"],
-      ["A313","Classic Red","#D01F26"],["A318","Dark Red","#8C1B21"],["A402","Pink","#E86CA0"],
-      ["A408","Fuchsia","#C4227E"],["A505","Light Green","#7FBF3F"],["A511","Green","#1F8A3B"],
-      ["A512","Dark Green","#14532D"],["A602","Light Blue","#5BC2E7"],["A608","Blue","#1C5FA8"],
-      ["A610","Dark Blue","#1B2E6B"],["A614","Violet","#6C3FA0"],["A701","Brown","#6B4423"],
-      ["A704","Beige","#D8C39A"],["A801","Black","#1C1C1C"],["A802","Grey","#8A8A8A"],
-      ["A803","Light Grey","#C9C9C9"],["A804","White","#F2F2EE"]
-    ]},
-  mtn94: { name:"MTN 94", volNote:"750 мл у Montana Colors — отдельные линейки (Mad Maxxx, XXXL, Krink) с ограниченной палитрой: учитывайте это при закупке.",
-    volumes:{ "400":{cov:1.5, price:700}, "750":{cov:2.8, price:1250} },
-    colors:[
-      ["RV-9010","Vintage White","#EFEDE3"],["RV-9005","Black","#2B2B2B"],["RV-7001","Light Grey","#B9B7AE"],
-      ["RV-7004","Grey","#7C7A74"],["RV-1015","Lemon Yellow","#F5D515"],["RV-1024","Signal Yellow","#F2B705"],
-      ["RV-1032","Bright Orange","#F07818"],["RV-1036","Orange","#E85D04"],["RV-2008","Red","#C62828"],
-      ["RV-2016","Dark Red","#8E1B26"],["RV-3003","Rose Pink","#E77FA8"],["RV-3005","Fuchsia","#B9268A"],
-      ["RV-4005","Grass Green","#4C9A2A"],["RV-4008","Dark Green","#1F5B34"],["RV-5007","Light Blue","#57B8E0"],
-      ["RV-5010","Blue","#1F5FA9"],["RV-5013","Dark Blue","#1B2C63"],["RV-6001","Violet","#6B3FA0"],
-      ["RV-8006","Brown","#6B4423"],["RV-8015","Beige","#D9C69E"]
-    ]},
-  black: { name:"Montana BLACK", volNote:"Ultra Wide 750 мл — узкая линейка (~12 базовых цветов) для широких линий и заливок.",
-    volumes:{ "400":{cov:1.5, price:700}, "750":{cov:2.8, price:1650} },
-    colors:[
-      ["BLK-9105","White","#F1EFE8"],["BLK-9005","Black","#232323"],["BLK-9100","Grey","#8F8D88"],
-      ["BLK-9118","Light Grey","#C7C5BF"],["BLK-0000","Chrome Silver","#BFC2C6"],
-      ["BLK-0020","Gold","#C8A24A"],["BLK-1002","Yellow","#F6D60A"],["BLK-1006","Yellow Orange","#F5A300"],
-      ["BLK-0028","Orange","#EF6A1E"],["BLK-0044","Red Orange","#E1450A"],["BLK-0060","Red","#C3232B"],
-      ["BLK-0068","Dark Red","#8C1B26"],["BLK-0122","Pink","#E879A9"],["BLK-0138","Magenta","#B5258C"],
-      ["BLK-0150","Green","#2E8B3C"],["BLK-0168","Dark Green","#1C4F2E"],["BLK-0204","Sky Blue","#55B8DF"],
-      ["BLK-0214","Blue","#1F5CA9"],["BLK-0220","Purple","#4B2C86"],["BLK-0240","Violet","#6B3FA0"]
-    ]},
-  molotow: { name:"Molotow Premium", volNote:"Burner 600 мл — в основном хром, золото и медь; цветовая линейка ограничена.",
-    volumes:{ "400":{cov:1.5, price:700}, "600":{cov:2.2, price:1600} },
-    colors:[
-      ["410","Signal White","#F3F2ED"],["401","Snow White","#FBFBF8"],["402","Traffic Grey","#8E8C86"],
-      ["404","Neutral Grey","#5C5A56"],["400","Pure Black","#1F1F1F"],
-      ["215","Chromium Yellow","#F6CE1B"],["220","Sun Yellow","#F8C300"],["226","Fire Orange","#EE7114"],
-      ["230","Carmine Red","#C22233"],["235","Dark Red","#8E1B26"],["242","Pink","#E879A9"],
-      ["247","Magenta","#B5258C"],["260","Grass Green","#3F9A3F"],["264","Dark Green","#1F5B34"],
-      ["268","Deep Sea Blue","#1F4E79"],["274","Azure Blue","#3E9BD6"],["278","Royal Blue","#1F3F8F"],
-      ["282","Violet","#6B3FA0"],["270","Lilac Purple","#8E6BB0"]
-    ]},
-  loop: { name:"Loop", volNote:"Maxi 600 мл — 17 цветов в линейке.",
-    volumes:{ "400":{cov:1.5, price:560}, "600":{cov:2.2, price:698} },
-    colors:[
-      ["401","White","#F1EFE9"],["400","Black","#222222"],["420","Grey","#8C8C88"],
-      ["421","Light Grey","#C8C6C0"],["101","Yellow","#F5D611"],["105","Orange","#EE6D1B"],
-      ["201","Red","#C22430"],["205","Dark Red","#8C1C26"],["301","Pink","#E77FA8"],
-      ["303","Magenta","#B8258C"],["501","Green","#2E8B3C"],["505","Dark Green","#1D5030"],
-      ["601","Light Blue","#54B7DF"],["605","Blue","#1F5CA9"],["610","Dark Blue","#1C2B60"],
-      ["620","Purple","#5E3A94"],["801","Brown","#6B4423"],["803","Beige","#D9C69E"]
-    ]},
-  flame: { name:"Flame", volNote:"",
-    volumes:{ "400":{cov:1.5, price:550}, "600":{cov:2.2, price:890} },
-    colors:[
-      ["9001","White","#F2F1EB"],["9005","Black","#242424"],["7004","Grey","#8E8C88"],
-      ["1018","Yellow","#F5D412"],["1033","Orange","#EE6F1D"],["2004","Red","#C4232E"],
-      ["2008","Dark Red","#8D1C26"],["3002","Pink","#E77EA6"],["3010","Magenta","#B5258C"],
-      ["5004","Green","#2F8B3C"],["5008","Dark Green","#1E5230"],["6005","Light Blue","#53B6DE"],
-      ["6010","Blue","#1F5BA8"],["6020","Dark Blue","#1B2A5E"],["6025","Purple","#5E3A94"],
-      ["8002","Brown","#6B4423"],["8010","Beige","#DAC79F"]
-    ]}
+/* === Интеграция палитр из graffiti-palettes.js (v1.0, 15.11.2026): 10 брендов, 1289 цветов === */
+const GRAFFITI_PALETTES_DATA = {"version": "1.0", "updated": "2026-11-15", "legend": {"approx": "0 = официальное значение HEX; 1 = приблизительное (подбор по семейству и кодовой серии)"}, "note": "Коды и названия — по официальным ростерам производителей; HEX у части позиций официальные (якоря), у остальных приблизительные.", "brands": {"molotow": {"name": "Molotow Premium", "country": "Германия", "volumes": {"400": {"cov": 1.6, "price": 640}, "600": {"cov": 2.2, "price": 890}}, "colors": [["#001", "jasmin yellow", "#FDF4A6", 1], ["#002", "Yellow Light", "#FADD1F", 1], ["#003", "lemon yellow", "#FFE655", 1], ["#004", "black", "#141414", 1], ["#005", "Yellow Light", "#F2D723", 1], ["#006", "Yellow Light", "#F0D524", 1], ["#007", "Yellow Soft", "#EDD225", 1], ["#008", "Yellow Soft", "#EBD026", 1], ["#009", "Yellow Soft", "#E8CE27", 1], ["#010", "Yellow Soft", "#E6CC28", 1], ["#011", "Yellow Soft", "#E3CA29", 1], ["#012", "golden yellow", "#FFD700", 1], ["#013", "Yellow", "#DEC62A", 1], ["#014", "Yellow", "#DBC42B", 1], ["#015", "Yellow", "#D9C22C", 1], ["#016", "chrome yellow", "#FFCC00", 1], ["#017", "Yellow", "#D4BD2D", 1], ["#018", "Yellow Deep", "#D1BB2E", 1], ["#019", "Yellow Deep", "#CFB92F", 1], ["#020", "Yellow Deep", "#CCB72F", 1], ["#021", "Yellow Deep", "#C9B530", 1], ["#022", "Yellow Deep", "#C7B331", 1], ["#023", "Yellow Deep", "#C4B131", 1], ["#024", "Yellow Dark", "#C2AF32", 1], ["#025", "Yellow Dark", "#BFAC32", 1], ["#026", "Yellow Dark", "#BDAA33", 1], ["#027", "Yellow Dark", "#BAA833", 1], ["#028", "Yellow Dark", "#B8A633", 1], ["#029", "Orange Light", "#FA730C", 1], ["#030", "Orange Light", "#F6720E", 1], ["#031", "Orange Light", "#F2710F", 1], ["#032", "Orange Light", "#EF7010", 1], ["#033", "Orange Soft", "#EB6F11", 1], ["#034", "Orange Soft", "#E76E12", 1], ["#035", "Orange Soft", "#E36D13", 1], ["#036", "Orange Soft", "#E06C13", 1], ["#037", "Orange", "#DC6B14", 1], ["#038", "Orange", "#D86A15", 1], ["#039", "Orange", "#D46816", 1], ["#040", "Orange", "#D16717", 1], ["#041", "Orange Deep", "#CD6617", 1], ["#042", "Orange Deep", "#C96518", 1], ["#043", "Orange Deep", "#C56318", 1], ["#044", "Orange Deep", "#C26219", 1], ["#045", "Orange Dark", "#BE6119", 1], ["#046", "Orange Dark", "#BA5F1A", 1], ["#047", "Orange Dark", "#B65E1A", 1], ["#048", "Orange Dark", "#B35D1B", 1], ["#049", "Red Light", "#E01220", 1], ["#050", "Red Light", "#DC1320", 1], ["#051", "Red Light", "#D71320", 1], ["#052", "Red Light", "#D31420", 1], ["#053", "Red Light", "#CE1421", 1], ["#054", "Red Light", "#CA1521", 1], ["#055", "Red Soft", "#C51521", 1], ["#056", "Red Soft", "#C11521", 1], ["#057", "Red Soft", "#BC1621", 1], ["#058", "Red Soft", "#B81621", 1], ["#059", "Red Soft", "#B31621", 1], ["#060", "Red Soft", "#AF1621", 1], ["#061", "Red", "#AA1720", 1], ["#062", "Red", "#A51720", 1], ["#063", "Red", "#A11720", 1], ["#064", "Red", "#9C1720", 1], ["#065", "Red", "#981720", 1], ["#066", "Red Deep", "#93171F", 1], ["#067", "Red Deep", "#8F171F", 1], ["#068", "Red Deep", "#8A171E", 1], ["#069", "Red Deep", "#86171E", 1], ["#070", "Red Deep", "#81161E", 1], ["#071", "Red Deep", "#7D161D", 1], ["#072", "Red Dark", "#78161C", 1], ["#073", "Red Dark", "#74161C", 1], ["#074", "Red Dark", "#6F151B", 1], ["#075", "Red Dark", "#6B151B", 1], ["#076", "Red Dark", "#66141A", 1], ["#077", "Pink Light", "#FA3E7D", 1], ["#078", "Pink Light", "#F53F7C", 1], ["#079", "Pink Light", "#F03F7A", 1], ["#080", "Pink Light", "#EC4079", 1], ["#081", "Pink Light", "#E74077", 1], ["#082", "Pink Soft", "#E24076", 1], ["#083", "Pink Soft", "#DD4074", 1], ["#084", "Pink Soft", "#D94073", 1], ["#085", "Pink Soft", "#D44071", 1], ["#086", "Pink Soft", "#CF4070", 1], ["#087", "Pink", "#CA406E", 1], ["#088", "Pink", "#C5406C", 1], ["#089", "Pink", "#C13F6A", 1], ["#090", "Pink", "#BC3F69", 1], ["#091", "Pink", "#B73F67", 1], ["#092", "Pink Deep", "#B23E65", 1], ["#093", "Pink Deep", "#AE3E63", 1], ["#094", "Pink Deep", "#A93D61", 1], ["#095", "Pink Deep", "#A43C5F", 1], ["#096", "Pink Deep", "#9F3C5D", 1], ["#097", "Pink Dark", "#9B3B5B", 1], ["#098", "Pink Dark", "#963A59", 1], ["#099", "Pink Dark", "#913956", 1], ["#100", "Pink Dark", "#8C3854", 1], ["#101", "Violet Light", "#9C3DCC", 1], ["#102", "Violet Light", "#983DC5", 1], ["#103", "Violet Light", "#933CBF", 1], ["#104", "Violet Light", "#8E3CB8", 1], ["#105", "Violet Soft", "#8A3BB1", 1], ["#106", "Violet Soft", "#853AAA", 1], ["#107", "Violet Soft", "#8039A4", 1], ["#108", "Violet Soft", "#7B389D", 1], ["#109", "Violet", "#763796", 1], ["#110", "Violet", "#713590", 1], ["#111", "Violet", "#6D3489", 1], ["#112", "Violet", "#683282", 1], ["#113", "Violet Deep", "#63317B", 1], ["#114", "Violet Deep", "#5E2F75", 1], ["#115", "Violet Deep", "#582D6E", 1], ["#116", "Violet Deep", "#532B67", 1], ["#117", "Violet Dark", "#4E2961", 1], ["#118", "Violet Dark", "#49275A", 1], ["#119", "Violet Dark", "#442553", 1], ["#120", "Violet Dark", "#3E224D", 1], ["#121", "Blue Light", "#2469F2", 1], ["#122", "Blue Light", "#2567EB", 1], ["#123", "Blue Light", "#2564E3", 1], ["#124", "Blue Light", "#2562DC", 1], ["#125", "Blue Light", "#255FD4", 1], ["#126", "Blue Light", "#255DCD", 1], ["#127", "Blue Soft", "#255AC6", 1], ["#128", "Blue Soft", "#2558BE", 1], ["#129", "Blue Soft", "#2455B7", 1], ["#130", "Blue Soft", "#2452AF", 1], ["#131", "Blue Soft", "#234FA8", 1], ["#132", "Blue", "#234DA0", 1], ["#133", "Blue", "#224A99", 1], ["#134", "Blue", "#214791", 1], ["#135", "Blue", "#20448A", 1], ["#136", "Blue", "#1F4083", 1], ["#137", "Blue Deep", "#1E3D7B", 1], ["#138", "Blue Deep", "#1D3A74", 1], ["#139", "Blue Deep", "#1C376C", 1], ["#140", "Blue Deep", "#1B3365", 1], ["#141", "Blue Deep", "#19305D", 1], ["#142", "Blue Dark", "#182C56", 1], ["#143", "Blue Dark", "#16294E", 1], ["#144", "Blue Dark", "#142547", 1], ["#145", "Blue Dark", "#132240", 1], ["#146", "Blue Dark", "#111E38", 1], ["#147", "Teal Light", "#22E6E6", 1], ["#148", "Teal Light", "#22DADA", 1], ["#149", "Teal Light", "#22CECE", 1], ["#150", "Teal Soft", "#22C2C2", 1], ["#151", "Teal Soft", "#21B6B6", 1], ["#152", "Teal Soft", "#20ABAB", 1], ["#153", "Teal", "#1F9F9F", 1], ["#154", "Teal", "#1E9393", 1], ["#155", "Teal", "#1D8787", 1], ["#156", "Teal Deep", "#1B7C7C", 1], ["#157", "Teal Deep", "#197070", 1], ["#158", "Teal Deep", "#176464", 1], ["#159", "Teal Dark", "#155858", 1], ["#160", "Teal Dark", "#134C4C", 1], ["#161", "Green Light", "#2BD92B", 1], ["#162", "Green Light", "#2BD52B", 1], ["#163", "Green Light", "#2BD12B", 1], ["#164", "Green Light", "#2BCD2B", 1], ["#165", "Green Light", "#2AC92A", 1], ["#166", "Green Light", "#2AC52A", 1], ["#167", "Green Light", "#2AC12A", 1], ["#168", "Green Light", "#2ABD2A", 1], ["#169", "Green Soft", "#29B929", 1], ["#170", "Green Soft", "#29B529", 1], ["#171", "Green Soft", "#28B128", 1], ["#172", "Green Soft", "#28AD28", 1], ["#173", "Green Soft", "#28A928", 1], ["#174", "Green Soft", "#27A527", 1], ["#175", "Green Soft", "#27A127", 1], ["#176", "Green", "#269D26", 1], ["#177", "Green", "#269926", 1], ["#178", "Green", "#259525", 1], ["#179", "Green", "#249124", 1], ["#180", "Green", "#248D24", 1], ["#181", "Green", "#238923", 1], ["#182", "Green", "#228522", 1], ["#183", "Green Deep", "#228122", 1], ["#184", "Green Deep", "#217D21", 1], ["#185", "Green Deep", "#207920", 1], ["#186", "Green Deep", "#207520", 1], ["#187", "Green Deep", "#1F711F", 1], ["#188", "Green Deep", "#1E6D1E", 1], ["#189", "Green Deep", "#1D691D", 1], ["#190", "Green Dark", "#1C651C", 1], ["#191", "Green Dark", "#1C611C", 1], ["#192", "Green Dark", "#1B5D1B", 1], ["#193", "Green Dark", "#1A591A", 1], ["#194", "Green Dark", "#195519", 1], ["#195", "Green Dark", "#185118", 1], ["#196", "Green Dark", "#174C17", 1], ["#197", "Brown Light", "#804B2D", 1], ["#198", "Brown Light", "#79482B", 1], ["#199", "Brown Light", "#73452A", 1], ["#200", "Brown Soft", "#6D4229", 1], ["#201", "Brown Soft", "#663E27", 1], ["#202", "Brown Soft", "#603B25", 1], ["#203", "Brown", "#5A3724", 1], ["#204", "Brown", "#543422", 1], ["#205", "Brown", "#4D3020", 1], ["#206", "Brown Deep", "#472D1E", 1], ["#207", "Brown Deep", "#41291C", 1], ["#208", "Brown Deep", "#3A2619", 1], ["#209", "Brown Dark", "#342217", 1], ["#210", "Brown Dark", "#2E1E15", 1], ["#211", "Grey Light", "#EBEFF2", 1], ["#212", "Grey Light", "#DFE3E7", 1], ["#213", "Grey Light", "#D3D7DB", 1], ["#214", "Grey Light", "#C7CCD0", 1], ["#215", "Grey Soft", "#BBC0C5", 1], ["#216", "Grey Soft", "#AFB4B9", 1], ["#217", "Grey Soft", "#A4A9AE", 1], ["#218", "Grey", "#989DA3", 1], ["#219", "Grey", "#8D9297", 1], ["#220", "Grey", "#82878C", 1], ["#221", "Grey Deep", "#777B80", 1], ["#222", "Grey Deep", "#6B7075", 1], ["#223", "Grey Deep", "#60656A", 1], ["#224", "Grey Dark", "#565A5E", 1], ["#225", "Grey Dark", "#4B4F53", 1], ["#226", "Grey Dark", "#404447", 1], ["#227", "White Light", "#FFFFFF", 1], ["#228", "White Light", "#FFFFFF", 1], ["#229", "White Light", "#FFFFFF", 1], ["#230", "White Light", "#FFFFFF", 1], ["#231", "signal white", "#FFFFFF", 0], ["#106-1", "White Light", "#FFFFFF", 1], ["#106-2", "White Soft", "#FFFFFF", 1], ["#106-3", "White Soft", "#FFFFFF", 1], ["#160-1", "White Soft", "#FFFFFF", 1], ["#181-1", "White Soft", "#FFFFFF", 1], ["#181-2", "White Soft", "#FFFFFF", 1], ["#182-1", "White", "#FFFFFF", 1], ["#182-2", "White", "#FFFFFF", 1], ["#184-1", "White", "#FFFFFF", 1], ["#184-2", "White", "#FFFFFF", 1], ["#184-3", "White", "#FFFFFF", 1], ["#184-4", "White Deep", "#FFFFFF", 1], ["#184-5", "White Deep", "#FFFFFF", 1], ["#184-6", "White Deep", "#FFFFFF", 1], ["#184-7", "White Deep", "#FFFFFF", 1], ["#204-1", "White Deep", "#FFFFFF", 1], ["#220-1", "White Dark", "#FFFFFF", 1], ["#221-1", "White Dark", "#FFFFFF", 1]]}, "mtn94": {"name": "MTN 94", "country": "Испания", "volumes": {"400": {"cov": 1.6, "price": 590}, "750": {"cov": 2.8, "price": 1050}}, "colors": [["RV-20", "Party Yellow", "#FFEF8C", 0], ["RV-24", "Fluor Yellow", "#FDEF4C", 0], ["RV-25", "Fluor Orange", "#F68B1F", 0], ["RV-26", "Fluor Red", "#EF3A4D", 0], ["RV-27", "Fluor Violet", "#9857A5", 0], ["RV-28", "Cosmos Violet", "#241C46", 0], ["RV-29", "Fluor Green", "#61BB46", 0], ["RV-30", "Electric Blue", "#005891", 0], ["RV-64", "Respect Pink", "#B59892", 0], ["RV-77", "Night Red", "#2D0604", 0], ["RV-78", "Metropolis Grey", "#262227", 0], ["RV-86", "Boreal Pink", "#E3BFC3", 0], ["RV-87", "Stereo Pink", "#CA95A4", 0], ["RV-88", "Single Pink", "#A06C7E", 0], ["RV-89", "Compact Red", "#864A54", 0], ["RV-90", "Matilde Red", "#582B3A", 0], ["RV-91", "Pandora Red", "#4F1F30", 0], ["RV-92", "Gaudi Red", "#321129", 0], ["RV-93", "Stendhal Red", "#1E000E", 0], ["RV-99", "Glace Brown", "#7A3D24", 0], ["RV-105", "Red Light", "#DE1220", 1], ["RV-106", "Red Light", "#DB1320", 1], ["RV-107", "Red Light", "#D81320", 1], ["RV-108", "Red Light", "#D61320", 1], ["RV-109", "Canarias Yellow", "#FFF058", 0], ["RV-110", "Yosemite Yellow", "#C7B300", 0], ["RV-111", "Babel Green", "#A29400", 0], ["RV-112", "Mission Green", "#766A10", 0], ["RV-113", "Dragon Green", "#5E5003", 0], ["RV-114", "Red Soft", "#C51521", 1], ["RV-115", "Tutti Frutti", "#EA949D", 0], ["RV-116", "Blood Red", "#D52F25", 0], ["RV-120", "Red Soft", "#BD1621", 1], ["RV-121", "Icarus Grey", "#48484B", 0], ["RV-126", "Red Soft", "#B81621", 1], ["RV-127", "Red Soft", "#B51621", 1], ["RV-128", "Red Soft", "#B21621", 1], ["RV-129", "Red Soft", "#AF1621", 1], ["RV-130", "Red", "#AD1721", 1], ["RV-131", "Red", "#AA1720", 1], ["RV-132", "Red", "#A71720", 1], ["RV-133", "Red", "#A51720", 1], ["RV-134", "Red", "#A21720", 1], ["RV-135", "Red", "#9F1720", 1], ["RV-136", "Red", "#9C1720", 1], ["RV-137", "Red", "#9A1720", 1], ["RV-138", "Red", "#97171F", 1], ["RV-139", "Red Deep", "#94171F", 1], ["RV-140", "Red Deep", "#92171F", 1], ["RV-141", "Red Deep", "#8F171F", 1], ["RV-142", "Gemini Green", "#E1F0E8", 0], ["RV-144", "Bali Green", "#7BC6C0", 0], ["RV-145", "Erasmus Green", "#5BB5B5", 0], ["RV-146", "Glory Blue", "#2D6A75", 0], ["RV-147", "Pegasus Blue", "#003640", 0], ["RV-148", "Hercules Blue", "#002628", 0], ["RV-149", "Hydra Blue", "#8ECAE5", 0], ["RV-150", "Argo Blue", "#44B3DF", 0], ["RV-151", "Freedom Blue", "#0098D2", 0], ["RV-152", "Europe Blue", "#0074B0", 0], ["RV-154", "Twister Blue", "#042151", 0], ["RV-164", "Tokyo Pink", "#F7C7D7", 0], ["RV-165", "Orchid Pink", "#EC7FAA", 0], ["RV-166", "Red Dark", "#69151A", 1], ["RV-169", "Taurus Red", "#36001C", 0], ["RV-172", "Destiny Violet", "#8270A3", 0], ["RV-173", "Ultraviolet", "#6B4D8D", 0], ["RV-174", "Venus Violet", "#483366", 0], ["RV-175", "Electra Violet", "#32234E", 0], ["RV-177", "Eldorado", "#F1C700", 0], ["RV-178", "Tibet", "#D58B26", 0], ["RV-179", "Bonsai Green", "#B8BB86", 0], ["RV-180", "Thai Green", "#8E966E", 0], ["RV-181", "Labyrinth Green", "#47492B", 0], ["RV-182", "Emerald Green", "#009E8F", 0], ["RV-183", "Beryl Green", "#117774", 0], ["RV-184", "Rain Blue", "#C4E7F8", 0], ["RV-193", "Chewing Gum", "#F6C3D3", 0], ["RV-194", "Supernova Pink", "#FCE6EB", 0], ["RV-195", "Shiva Violet", "#E5CCE1", 0], ["RV-196", "Saudade Pink", "#F2DDDD", 0], ["RV-199", "Java Green", "#86C8B4", 0], ["RV-200", "Plancton", "#E8D6C8", 0], ["RV-201", "Scarlet Brown", "#8E6061", 0], ["RV-202", "Mosquito Brown", "#684445", 0], ["RV-207", "Mango", "#E87722", 0], ["RV-265", "Sonar Green", "#B9BE56", 0], ["RV-266", "Psycho Green", "#D5E739", 0], ["RV-267", "Sulfur Yellow", "#FAEB37", 0], ["RV-268", "Tramontana Blue", "#007788", 0], ["RV-269", "Genesis Blue", "#179DAB", 0], ["RV-270", "Formentera Blue", "#00B4BC", 0], ["RV-271", "Mystic Green", "#25BD59", 0], ["RV-272", "Mint Green", "#29CB7E", 0], ["RV-273", "Iguana Green", "#8CC947", 0], ["RV-274", "Reverend Violet", "#6C5D80", 0], ["RV-275", "Raval Violet", "#94679C", 0], ["RV-276", "Bishop Violet", "#C29BCB", 0], ["RV-277", "Disco Pink", "#BD51A2", 0], ["RV-278", "Joker Pink", "#E44C9A", 0], ["RV-279", "Rosario Pink", "#DC4588", 0], ["RV-280", "Hulk Green", "#41A248", 0], ["RV-283", "Sultan Violet", "#83577D", 0], ["RV-300", "Tofu Grey", "#FEF9E3", 0], ["RV-301", "Placebo Grey", "#F5EFD6", 0], ["RV-302", "Koala Grey", "#D8CDC3", 0], ["RV-303", "Native Grey", "#BCB2AD", 0], ["RV-304", "Balboa Grey", "#A29690", 0], ["RV-305", "Cloud Grey", "#C9D2D7", 0], ["RV-306", "Winter Grey", "#B7C1CD", 0], ["RV-307", "Jaws Grey", "#ABB5C1", 0], ["RV-308", "Whale Grey", "#6B7C91", 0], ["RV-309", "Chernobyl Grey", "#5E7386", 0], ["RV-310", "Republic Violet", "#DACBE5", 0], ["RV-313", "Martinez Blue", "#AEBEE3", 0], ["RV-314", "Rosemary Blue", "#9DB1DC", 0], ["RV-315", "Dancer Blue", "#85A0D3", 0], ["RV-316", "Marseille Blue", "#6386C3", 0], ["RV-317", "Porto Blue", "#616CB1", 0], ["RV-320", "Mantra Blue", "#302B66", 0], ["RV-321", "April Violet", "#E9CDE4", 0], ["RV-322", "Arlet Violet", "#D0ADD2", 0], ["RV-1017", "Peach", "#E6A65D", 0], ["RV-1021", "Light Yellow", "#FEDF00", 0], ["RV-1028", "Medium Yellow", "#FFA300", 0], ["RV-3001", "Vivid Red", "#B3061E", 0], ["RV-3007", "Cherokee Red", "#3A0807", 0], ["RV-3017", "Fever Red", "#DC534D", 0], ["RV-5001", "Ethereal Yellow", "#FFFAA3", 0], ["RV-5002", "Calima Orange", "#FBB36D", 0], ["RV-5003", "Soul Red", "#EDA795", 0], ["RV-5004", "Judea Brown", "#B79E74", 0], ["RV-5005", "Dark Blue", "#003875", 0], ["RV-5006", "Aura Violet", "#C5ADD0", 0], ["RV-5007", "Atmosphere Blue", "#AFCCDF", 0], ["RV-5008", "Breeze Green", "#A1D5CF", 0], ["RV-5009", "Air White", "#FFFFFF", 0], ["RV-5010", "Smoke Grey", "#CDCDCD", 0], ["RV-5011", "Shadow Black", "#A6A6A7", 0], ["RV-5013", "Navy Blue", "#010E30", 0], ["RV-5018", "Turquoise", "#008691", 0], ["RV-6027", "Luminous Green", "#A1D5CF", 0], ["RV-7016", "Anthracite Grey", "#363538", 0], ["RV-8023", "Mustard", "#A76225", 0], ["RV-9010", "White", "#FFFFFF", 0], ["RV-9011", "Black", "#000000", 0]]}, "black": {"name": "Montana BLACK", "country": "Испания", "volumes": {"400": {"cov": 1.5, "price": 710}, "600": {"cov": 2.2, "price": 1690}, "750": {"cov": 2.8, "price": 1650}}, "colors": [["MN-001", "Yellow Light", "#FCDF1E", 1], ["MN-002", "Yellow Light", "#F6DA21", 1], ["MN-003", "Yellow Light", "#F0D524", 1], ["MN-004", "Yellow Soft", "#EAD026", 1], ["MN-005", "Yellow Soft", "#E3CA29", 1], ["MN-006", "Yellow", "#DDC52B", 1], ["MN-007", "Yellow", "#D7C02D", 1], ["MN-008", "Yellow", "#D1BB2E", 1], ["MN-009", "Yellow Deep", "#CAB630", 1], ["MN-010", "Yellow Deep", "#C4B131", 1], ["MN-011", "Yellow Dark", "#BEAB32", 1], ["MN-012", "Yellow Dark", "#B8A633", 1], ["MN-013", "Orange Light", "#FA730C", 1], ["MN-014", "Orange Light", "#F2710F", 1], ["MN-015", "Orange Soft", "#EA6F11", 1], ["MN-016", "Orange Soft", "#E26D13", 1], ["MN-017", "Orange", "#DA6A15", 1], ["MN-018", "Orange", "#D26816", 1], ["MN-019", "Orange Deep", "#CA6518", 1], ["MN-020", "Orange Deep", "#C26219", 1], ["MN-021", "Orange Dark", "#BA5F1A", 1], ["MN-022", "Orange Dark", "#B35D1B", 1], ["MN-023", "Red Light", "#E01220", 1], ["MN-024", "Red Light", "#D81320", 1], ["MN-025", "Red Light", "#D01421", 1], ["MN-026", "Red Light", "#C81521", 1], ["MN-027", "Red Soft", "#C01521", 1], ["MN-028", "Red Soft", "#B81621", 1], ["MN-029", "Red Soft", "#AF1621", 1], ["MN-030", "Red", "#A71720", 1], ["MN-031", "Red", "#9F1720", 1], ["MN-032", "Red", "#97171F", 1], ["MN-033", "Red Deep", "#8F171F", 1], ["MN-034", "Red Deep", "#87171E", 1], ["MN-035", "Red Deep", "#7E161D", 1], ["MN-036", "Red Dark", "#76161C", 1], ["MN-037", "Red Dark", "#6E151B", 1], ["MN-038", "Red Dark", "#66141A", 1], ["MN-039", "Pink Light", "#FA3E7D", 1], ["MN-040", "Pink Light", "#EE3F79", 1], ["MN-041", "Pink Soft", "#E24076", 1], ["MN-042", "Pink Soft", "#D54072", 1], ["MN-043", "Pink", "#C9406E", 1], ["MN-044", "Pink", "#BD3F69", 1], ["MN-045", "Pink Deep", "#B13E64", 1], ["MN-046", "Pink Deep", "#A53C5F", 1], ["MN-047", "Pink Dark", "#983A5A", 1], ["MN-048", "Pink Dark", "#8C3854", 1], ["MN-049", "Violet Light", "#9C3DCC", 1], ["MN-050", "Violet Light", "#933CBE", 1], ["MN-051", "Violet Soft", "#893BB0", 1], ["MN-052", "Violet Soft", "#7F39A2", 1], ["MN-053", "Violet", "#743693", 1], ["MN-054", "Violet", "#6A3385", 1], ["MN-055", "Violet Deep", "#5F3077", 1], ["MN-056", "Violet Deep", "#542C69", 1], ["MN-057", "Violet Dark", "#4A275B", 1], ["MN-058", "Violet Dark", "#3E224D", 1], ["MN-059", "Blue Light", "#2469F2", 1], ["MN-060", "Blue Light", "#2565E6", 1], ["MN-061", "Blue Light", "#2561D9", 1], ["MN-062", "Blue Light", "#255DCD", 1], ["MN-063", "Blue Soft", "#2559C1", 1], ["MN-064", "Blue Soft", "#2454B4", 1], ["MN-065", "Blue Soft", "#234FA8", 1], ["MN-066", "Blue", "#224B9B", 1], ["MN-067", "Blue", "#21468F", 1], ["MN-068", "Blue", "#1F4083", 1], ["MN-069", "Blue Deep", "#1E3B76", 1], ["MN-070", "Blue Deep", "#1B366A", 1], ["MN-071", "Blue Deep", "#19305D", 1], ["MN-072", "Blue Dark", "#172A51", 1], ["MN-073", "Blue Dark", "#142445", 1], ["MN-074", "Blue Dark", "#111E38", 1], ["MN-075", "Teal Light", "#22E6E6", 1], ["MN-076", "Teal Light", "#22D0D0", 1], ["MN-077", "Teal Soft", "#21BABA", 1], ["MN-078", "Teal Soft", "#20A4A4", 1], ["MN-079", "Teal", "#1D8E8E", 1], ["MN-080", "Teal Deep", "#1B7878", 1], ["MN-081", "Teal Deep", "#176262", 1], ["MN-082", "Teal Dark", "#134C4C", 1], ["MN-083", "Green Light", "#2BD92B", 1], ["MN-084", "Green Light", "#2BCE2B", 1], ["MN-085", "Green Light", "#2AC32A", 1], ["MN-086", "Green Soft", "#29B829", 1], ["MN-087", "Green Soft", "#28AE28", 1], ["MN-088", "Green Soft", "#27A327", 1], ["MN-089", "Green", "#259825", 1], ["MN-090", "Green", "#248D24", 1], ["MN-091", "Green", "#228222", 1], ["MN-092", "Green Deep", "#207820", 1], ["MN-093", "Green Deep", "#1E6D1E", 1], ["MN-094", "Green Deep", "#1C621C", 1], ["MN-095", "Green Dark", "#1A571A", 1], ["MN-096", "Green Dark", "#174C17", 1], ["MN-097", "Brown Light", "#804B2D", 1], ["MN-098", "Brown Light", "#75462B", 1], ["MN-099", "Brown Soft", "#6B4128", 1], ["MN-100", "Brown Soft", "#613B26", 1], ["MN-101", "Brown", "#573623", 1], ["MN-102", "Brown", "#4D3020", 1], ["MN-103", "Brown Deep", "#422A1C", 1], ["MN-104", "Brown Deep", "#382419", 1], ["MN-105", "Brown Dark", "#2E1E15", 1], ["MN-106", "Grey Light", "#EBEFF2", 1], ["MN-107", "Grey Light", "#E1E5E9", 1], ["MN-108", "Grey Light", "#D7DBDF", 1], ["MN-109", "Grey Light", "#CDD1D6", 1], ["MN-110", "Grey Soft", "#C3C8CC", 1], ["MN-111", "Grey Soft", "#B9BEC3", 1], ["MN-112", "Grey Soft", "#AFB4B9", 1], ["MN-113", "Grey Soft", "#A6ABB0", 1], ["MN-114", "Grey", "#9CA1A6", 1], ["MN-115", "Grey", "#93989D", 1], ["MN-116", "Grey", "#898E93", 1], ["MN-117", "Grey", "#80858A", 1], ["MN-118", "Grey Deep", "#777B80", 1], ["MN-119", "Grey Deep", "#6D7277", 1], ["MN-120", "Grey Deep", "#64696D", 1], ["MN-121", "Grey Deep", "#5B5F64", 1], ["MN-122", "Grey Dark", "#52565A", 1], ["MN-123", "Grey Dark", "#494D51", 1], ["MN-124", "Grey Dark", "#404447", 1], ["MN-125", "Black Light", "#171717", 1], ["MN-126", "Black Light", "#151515", 1], ["MN-127", "Black Soft", "#131313", 1], ["MN-128", "Black", "#111111", 1], ["MN-129", "Black Deep", "#0F0F0F", 1], ["MN-130", "Black Dark", "#0D0D0D", 1], ["MN-131", "Chrome Light", "#DCE1E6", 1], ["MN-132", "Chrome Soft", "#DBDFE3", 1], ["MN-133", "Chrome", "#DADDE0", 1], ["MN-134", "Chrome Deep", "#D8DBDE", 1], ["MN-135", "Chrome Dark", "#D7D9DB", 1]]}, "loop": {"name": "Loop Colors", "country": "Франция", "volumes": {"400": {"cov": 1.6, "price": 590}, "600": {"cov": 2.4, "price": 990}}, "colors": [["LP-100", "WHITE", "#FFFFFF", 0], ["LP-101", "GLOSS WHITE", "#F7F7F5", 1], ["LP-102", "White Light", "#FFFFFF", 1], ["LP-103", "BLACK MATT", "#1A1A1A", 1], ["LP-104", "BLACK", "#141414", 0], ["LP-105", "BLACK GLOSS", "#0D0D0D", 1], ["LP-106", "MADRID", "#FBF193", 0], ["LP-107", "White Light", "#FFFFFF", 1], ["LP-108", "White Light", "#FFFFFF", 1], ["LP-109", "White Soft", "#FFFFFF", 1], ["LP-110", "White Soft", "#FFFFFF", 1], ["LP-111", "White Soft", "#FFFFFF", 1], ["LP-112", "White Soft", "#FFFFFF", 1], ["LP-113", "White Soft", "#FFFFFF", 1], ["LP-114", "White Soft", "#FFFFFF", 1], ["LP-115", "White Soft", "#FFFFFF", 1], ["LP-116", "White Soft", "#FFFFFF", 1], ["LP-117", "White", "#FFFFFF", 1], ["LP-118", "White", "#FFFFFF", 1], ["LP-119", "White", "#FFFFFF", 1], ["LP-120", "White", "#FFFFFF", 1], ["LP-121", "White", "#FFFFFF", 1], ["LP-122", "White", "#FFFFFF", 1], ["LP-123", "ROTTERDAM", "#BB4914", 0], ["LP-124", "EINDHOVEN", "#FEDCA3", 0], ["LP-125", "White Deep", "#FFFFFF", 1], ["LP-126", "White Deep", "#FFFFFF", 1], ["LP-127", "White Deep", "#FFFFFF", 1], ["LP-128", "White Deep", "#FFFFFF", 1], ["LP-129", "BRISTOL", "#F8B14C", 1], ["LP-130", "White Deep", "#FFFFFF", 1], ["LP-131", "White Deep", "#FFFFFF", 1], ["LP-132", "BIRMINGHAM", "#EB6D0F", 1], ["LP-133", "White Dark", "#FFFFFF", 1], ["LP-134", "White Dark", "#FFFFFF", 1], ["LP-135", "ARNHEM", "#E75811", 0], ["LP-136", "White Dark", "#FFFFFF", 1], ["LP-137", "White Dark", "#FFFFFF", 1], ["LP-138", "White Dark", "#FFFFFF", 1], ["LP-139", "White Dark", "#FFFFFF", 1], ["LP-140", "LEEDS", "#7B1417", 0], ["LP-150", "DUBLIN", "#C24C31", 1], ["LP-151", "Yellow Light", "#F9DC20", 1], ["LP-152", "Yellow Light", "#F5D922", 1], ["LP-153", "Yellow Light", "#F2D623", 1], ["LP-154", "Yellow Soft", "#EED325", 1], ["LP-155", "Yellow Soft", "#EAD026", 1], ["LP-156", "Yellow Soft", "#E7CD27", 1], ["LP-157", "Yellow Soft", "#E3CA29", 1], ["LP-158", "Yellow", "#DFC72A", 1], ["LP-159", "Yellow", "#DCC42B", 1], ["LP-160", "Yellow", "#D8C12C", 1], ["LP-161", "PORTO", "#C63D65", 0], ["LP-162", "Yellow Deep", "#D1BB2E", 1], ["LP-163", "LISBOA", "#88072F", 0], ["LP-164", "Yellow Deep", "#CAB530", 1], ["LP-165", "Yellow Deep", "#C6B231", 1], ["LP-166", "Yellow Dark", "#C2AF32", 1], ["LP-167", "Yellow Dark", "#BFAC32", 1], ["LP-168", "Yellow Dark", "#BBA933", 1], ["LP-169", "Yellow Dark", "#B8A633", 1], ["LP-180", "Orange Light", "#FA730C", 1], ["LP-181", "Orange Light", "#F6720E", 1], ["LP-182", "Orange Light", "#F2710F", 1], ["LP-183", "Orange Light", "#EF7010", 1], ["LP-184", "MORA", "#591861", 0], ["LP-185", "Orange Soft", "#E76E12", 1], ["LP-186", "Orange Soft", "#E36D13", 1], ["LP-187", "Orange Soft", "#E06C13", 1], ["LP-188", "Orange", "#DC6B14", 1], ["LP-189", "Orange", "#D86A15", 1], ["LP-190", "SIENA", "#638234", 0], ["LP-191", "LIVORNO", "#224A1E", 0], ["LP-192", "Orange Deep", "#CD6617", 1], ["LP-193", "Orange Deep", "#C96518", 1], ["LP-194", "Orange Deep", "#C56318", 1], ["LP-195", "Orange Deep", "#C26219", 1], ["LP-196", "Orange Dark", "#BE6119", 1], ["LP-197", "Orange Dark", "#BA5F1A", 1], ["LP-198", "Orange Dark", "#B65E1A", 1], ["LP-199", "Orange Dark", "#B35D1B", 1], ["LP-200", "Red Light", "#E01220", 1], ["LP-201", "Red Light", "#DA1320", 1], ["LP-202", "Red Light", "#D41420", 1], ["LP-203", "Red Light", "#CD1421", 1], ["LP-204", "Red Soft", "#C71521", 1], ["LP-205", "Red Soft", "#C01521", 1], ["LP-206", "Red Soft", "#BA1621", 1], ["LP-207", "Red Soft", "#B31621", 1], ["LP-208", "Red", "#AD1721", 1], ["LP-209", "Red", "#A61720", 1], ["LP-210", "MALMO", "#AD83AF", 0], ["LP-211", "Red", "#9A1720", 1], ["LP-212", "Red Deep", "#93171F", 1], ["LP-213", "Red Deep", "#8D171F", 1], ["LP-214", "Red Deep", "#86171E", 1], ["LP-215", "Red Deep", "#80161D", 1], ["LP-216", "Red Dark", "#79161D", 1], ["LP-217", "Red Dark", "#73161C", 1], ["LP-218", "Red Dark", "#6C151B", 1], ["LP-219", "TAVERNY", "#336699", 0], ["LP-240", "Pink Light", "#FA3E7D", 1], ["LP-241", "Pink Light", "#EE3F79", 1], ["LP-242", "Pink Soft", "#E24076", 1], ["LP-243", "Pink Soft", "#D54072", 1], ["LP-244", "Pink", "#C9406E", 1], ["LP-245", "Pink", "#BD3F69", 1], ["LP-246", "Pink Deep", "#B13E64", 1], ["LP-247", "Pink Deep", "#A53C5F", 1], ["LP-248", "Pink Dark", "#983A5A", 1], ["LP-249", "Pink Dark", "#8C3854", 1], ["LP-250", "Violet Light", "#9C3DCC", 1], ["LP-251", "Violet Light", "#993DC8", 1], ["LP-252", "Violet Light", "#963DC3", 1], ["LP-253", "Violet Light", "#933CBF", 1], ["LP-254", "Violet Light", "#903CBA", 1], ["LP-255", "Violet Light", "#8D3BB6", 1], ["LP-256", "Violet Soft", "#8A3BB2", 1], ["LP-257", "Violet Soft", "#873AAD", 1], ["LP-258", "Violet Soft", "#843AA9", 1], ["LP-259", "Violet Soft", "#8139A4", 1], ["LP-260", "Violet Soft", "#7D38A0", 1], ["LP-261", "Violet Soft", "#7A389C", 1], ["LP-262", "Violet", "#773797", 1], ["LP-263", "Violet", "#743693", 1], ["LP-264", "Violet", "#71358E", 1], ["LP-265", "Violet", "#6D348A", 1], ["LP-266", "Violet", "#6A3386", 1], ["LP-267", "Violet", "#673281", 1], ["LP-268", "Violet Deep", "#64317D", 1], ["LP-269", "Violet Deep", "#603078", 1], ["LP-270", "Violet Deep", "#5D2F74", 1], ["LP-271", "Violet Deep", "#5A2E70", 1], ["LP-272", "Violet Deep", "#562C6B", 1], ["LP-273", "Violet Deep", "#532B67", 1], ["LP-274", "Violet Dark", "#502A62", 1], ["LP-275", "Violet Dark", "#4C285E", 1], ["LP-276", "Violet Dark", "#49275A", 1], ["LP-277", "Violet Dark", "#452555", 1], ["LP-278", "Violet Dark", "#422451", 1], ["LP-279", "Violet Dark", "#3E224D", 1], ["LP-300", "Blue Light", "#2469F2", 1], ["LP-301", "Blue Light", "#2566E8", 1], ["LP-302", "Blue Light", "#2563DF", 1], ["LP-303", "Blue Light", "#2560D5", 1], ["LP-304", "Blue Soft", "#255CCB", 1], ["LP-305", "Blue Soft", "#2559C1", 1], ["LP-306", "Blue Soft", "#2455B7", 1], ["LP-307", "Blue Soft", "#2452AE", 1], ["LP-308", "Blue", "#234EA4", 1], ["LP-309", "Blue", "#224A9A", 1], ["LP-310", "Blue", "#214690", 1], ["LP-311", "Blue", "#204286", 1], ["LP-312", "Blue Deep", "#1F3E7D", 1], ["LP-313", "Blue Deep", "#1D3A73", 1], ["LP-314", "Blue Deep", "#1B3569", 1], ["LP-315", "Blue Deep", "#1A315F", 1], ["LP-316", "Blue Dark", "#182C55", 1], ["LP-317", "Blue Dark", "#16284C", 1], ["LP-318", "Blue Dark", "#132342", 1], ["LP-319", "Blue Dark", "#111E38", 1], ["LP-330", "Teal Light", "#22E6E6", 1], ["LP-331", "Teal Light", "#22D5D5", 1], ["LP-332", "Teal Soft", "#22C3C3", 1], ["LP-333", "Teal Soft", "#21B3B3", 1], ["LP-334", "Teal", "#1FA2A2", 1], ["LP-335", "Teal", "#1E9191", 1], ["LP-336", "Teal Deep", "#1C8080", 1], ["LP-337", "Teal Deep", "#196E6E", 1], ["LP-338", "Teal Dark", "#165D5D", 1], ["LP-339", "Teal Dark", "#134C4C", 1], ["LP-340", "Green Light", "#2BD92B", 1], ["LP-341", "Green Light", "#2BCB2B", 1], ["LP-342", "Green Light", "#2ABD2A", 1], ["LP-343", "Green Soft", "#28AF28", 1], ["LP-344", "Green Soft", "#27A127", 1], ["LP-345", "Green", "#259325", 1], ["LP-346", "Green", "#228522", 1], ["LP-347", "Green Deep", "#207720", 1], ["LP-348", "Green Deep", "#1D691D", 1], ["LP-349", "Green Dark", "#1A5B1A", 1], ["LP-357", "Green Dark", "#174C17", 1], ["LP-358", "Brown", "#804B2D", 1], ["LP-359", "Brown", "#573623", 1], ["LP-360", "Brown", "#2E1E15", 1], ["LP-361", "Grey Light", "#EBEFF2", 1], ["LP-362", "Grey Light", "#D1D5DA", 1], ["LP-363", "Grey Soft", "#B8BDC1", 1], ["LP-364", "Grey Soft", "#9FA4A9", 1], ["LP-365", "Grey", "#868C91", 1], ["LP-366", "Grey Deep", "#6F7378", 1], ["LP-367", "Grey Deep", "#575B60", 1], ["LP-375", "MOSCOW", "#FFA38B", 0], ["LP-376", "ST. PETERSBURG", "#FF8D6D", 0], ["LP-377", "KRASNODAR", "#FF6A39", 0], ["LP-380", "Black Light", "#161616", 1], ["LP-381", "Black Light", "#161616", 1], ["LP-382", "Black Light", "#151515", 1], ["LP-383", "Black Soft", "#151515", 1], ["LP-384", "Black Soft", "#141414", 1], ["LP-385", "Black Soft", "#141414", 1], ["LP-386", "Black Soft", "#131313", 1], ["LP-387", "Black Soft", "#131313", 1], ["LP-415", "Black", "#131313", 1], ["LP-416", "Black", "#121212", 1], ["LP-417", "Black", "#121212", 1], ["LP-418", "Black", "#111111", 1], ["LP-419", "Black", "#111111", 1], ["LP-420", "Black Deep", "#101010", 1], ["LP-421", "Black Deep", "#101010", 1], ["LP-422", "Black Deep", "#0F0F0F", 1], ["LP-423", "Black Deep", "#0F0F0F", 1], ["LP-424", "Black Deep", "#0F0F0F", 1], ["LP-425", "Black Dark", "#0E0E0E", 1], ["LP-426", "Black Dark", "#0E0E0E", 1], ["LP-427", "Black Dark", "#0D0D0D", 1]]}, "arton": {"name": "Arton", "country": "Россия", "volumes": {"400": {"cov": 1.8, "price": 520}, "600": {"cov": 2.2, "price": 699}, "750": {"cov": 2.8, "price": 790}}, "colors": [["A101", "Chicken", null, 1], ["A102", "Lemon", null, 1], ["A103", "Yellow Light", "#F4D822", 1], ["A104", "Yellow Light", "#F0D524", 1], ["A105", "Zonker", null, 1], ["A106", "Yellow Soft", "#E8CE27", 1], ["A107", "Yellow Soft", "#E4CB28", 1], ["A108", "Mr.Nuts", null, 1], ["A109", "Buffalo", null, 1], ["A110", "Yellow", "#D8C12C", 1], ["A111", "Yellow", "#D4BE2D", 1], ["A112", "Yellow Deep", "#D0BA2E", 1], ["A113", "Mustard", null, 1], ["A114", "Yellow Deep", "#C8B430", 1], ["A115", "Curry", null, 1], ["A116", "Yellow Dark", "#C0AD32", 1], ["A117", "Yellow Dark", "#BCA933", 1], ["A118", "Yellow Dark", "#B8A633", 1], ["A200", "Pisok", null, 1], ["A201", "Pudding", null, 1], ["A202", "Orange Soft", "#E86E11", 1], ["A203", "Orange Soft", "#DF6C14", 1], ["A204", "Lava", null, 1], ["A205", "Orange", "#CD6617", 1], ["A206", "Halloween", null, 1], ["A207", "Phoenix", null, 1], ["A208", "Mack", null, 1], ["A300", "Red Light", "#E01220", 1], ["A301", "Red Light", "#DC1320", 1], ["A302", "Red Light", "#D71320", 1], ["A303", "Red Light", "#D21420", 1], ["A304", "Red Light", "#CD1421", 1], ["A305", "Red Light", "#C81521", 1], ["A306", "Red Soft", "#C31521", 1], ["A307", "Red Dragon", null, 1], ["A308", "Red Soft", "#B91621", 1], ["A309", "Vampire", null, 1], ["A310", "Red Soft", "#AF1621", 1], ["A311", "Red", "#AB1721", 1], ["A312", "Red", "#A61720", 1], ["A313", "Red", "#A11720", 1], ["A314", "Red", "#9C1720", 1], ["A315", "Red", "#97171F", 1], ["A316", "Sneksy", null, 1], ["A317", "Red Deep", "#8D171F", 1], ["A318", "Red Deep", "#88171E", 1], ["A319", "Red Deep", "#83161E", 1], ["A320", "Red Deep", "#7E161D", 1], ["A321", "Rhapsody", null, 1], ["A322", "Red Dark", "#75161C", 1], ["A323", "Salmon", null, 1], ["A324", "Red Dark", "#6B151B", 1], ["A325", "Coral", null, 1], ["A400", "Pink Light", "#FA3E7D", 1], ["A401", "Pink Light", "#F33F7B", 1], ["A402", "Pink Light", "#ED3F79", 1], ["A403", "Pink Light", "#E74077", 1], ["A404", "Pink Soft", "#E04075", 1], ["A405", "Pink Soft", "#DA4073", 1], ["A406", "Pink Soft", "#D34071", 1], ["A407", "Pink Soft", "#CD406F", 1], ["A408", "Pink", "#C6406C", 1], ["A409", "Pink", "#C03F6A", 1], ["A410", "Lavender", null, 1], ["A411", "Pink Deep", "#B33E65", 1], ["A412", "Pink Deep", "#AD3D62", 1], ["A413", "Pink Deep", "#A63D60", 1], ["A414", "Pink Deep", "#A03C5D", 1], ["A415", "Pink Dark", "#993B5A", 1], ["A416", "Pink Dark", "#933957", 1], ["A417", "Pink Dark", "#8C3854", 1], ["A500", "Blue Light", "#2469F2", 1], ["A501", "Blue Light", "#2566E7", 1], ["A502", "Blue Light", "#2562DC", 1], ["A503", "Nowe Crew", null, 1], ["A504", "Blue Soft", "#255BC6", 1], ["A505", "Blue Sky", null, 1], ["A506", "Blue Soft", "#2453B1", 1], ["A507", "Blue Soft", "#234FA6", 1], ["A508", "Ocean", null, 1], ["A509", "City Night", null, 1], ["A510", "Blue", "#204185", 1], ["A511", "Blue Deep", "#1E3D7A", 1], ["A512", "Blue Deep", "#1C386F", 1], ["A513", "Blue Deep", "#1A3364", 1], ["A514", "Blue Deep", "#182E59", 1], ["A515", "Blue Dark", "#16294E", 1], ["A516", "Blue Dark", "#142343", 1], ["A517", "Blue Dark", "#111E38", 1], ["A600", "Green Light", "#2BD92B", 1], ["A601", "Green Light", "#2BD12B", 1], ["A602", "Green Light", "#2AC82A", 1], ["A603", "Green Light", "#2AC02A", 1], ["A604", "Green Soft", "#29B829", 1], ["A605", "Green Soft", "#28B028", 1], ["A606", "Green Soft", "#27A727", 1], ["A607", "Green Soft", "#269F26", 1], ["A608", "Green", "#259725", 1], ["A609", "Green", "#248F24", 1], ["A610", "Green", "#238623", 1], ["A611", "Chartreuse", null, 1], ["A612", "Green Deep", "#207620", 1], ["A613", "Toxic", null, 1], ["A614", "Green Deep", "#1D651D", 1], ["A615", "Avocado", null, 1], ["A616", "Green Dark", "#195519", 1], ["A617", "Green Dark", "#174C17", 1], ["A700", "Grey Light", "#EBEFF2", 1], ["A701", "Smoke", null, 1], ["A702", "Grey Light", "#CFD4D8", 1], ["A703", "Grey Soft", "#C1C6CB", 1], ["A704", "Grey Soft", "#B4B9BE", 1], ["A705", "Grey Soft", "#A6ACB1", 1], ["A706", "Grey", "#999EA3", 1], ["A707", "Grey", "#8C9196", 1], ["A708", "Grey", "#7F8489", 1], ["A709", "Asphalt", null, 1], ["A710", "Coal", null, 1], ["A711", "Grey Deep", "#595D62", 1], ["A712", "Grey Dark", "#4D5155", 1], ["A713", "Grey Dark", "#404447", 1], ["A800", "Brown Light", "#804B2D", 1], ["A801", "Brown Light", "#78472B", 1], ["A802", "Brown Light", "#714429", 1], ["A803", "Brown Soft", "#694028", 1], ["A804", "Brown Soft", "#623C26", 1], ["A805", "Brown", "#5A3824", 1], ["A806", "Brown", "#533422", 1], ["A807", "Brown", "#4C301F", 1], ["A808", "Brown Deep", "#442B1D", 1], ["A809", "Brown Deep", "#3D271A", 1], ["A810", "Brown Dark", "#352218", 1], ["A811", "Mokko", null, 1], ["A900", "Super White", null, 1], ["A901", "White", "#FFFFFF", 1], ["A910", "White", "#FFFFFF", 1], ["A920", "Super Chrome", null, 1], ["A921", "Chrome Light", "#DCE1E6", 1], ["A923", "Gold", null, 1], ["A924", "Bronze", null, 1], ["A925", "Cooper", null, 1], ["A952", "Chrome", "#DADDE0", 1], ["A953", "Chrome", "#D9DCDF", 1], ["A955", "Chrome Deep", "#D8DBDE", 1], ["A957", "Chrome Deep", "#D8DADD", 1], ["A958", "Chrome Dark", "#D7D9DB", 1], ["A959", "Fluo Yellow", "#FFF70D", 1], ["AF1001", "Fluo Yellow", "#F8F011", 1], ["AF1002", "Fluo Yellow", "#F1EA14", 1]]}, "flameblue": {"name": "Flame Blue", "country": "Германия", "volumes": {"400": {"cov": 1.6, "price": 520}}, "colors": [["FB-100", "Vanilla", null, 1], ["FB-101", "Yellow Light", "#FBDE1F", 1], ["FB-102", "Yellow Light", "#FADD1F", 1], ["FB-103", "Yellow Light", "#F9DC20", 1], ["FB-104", "Yellow Light", "#F8DB20", 1], ["FB-105", "Yellow Light", "#F7DA21", 1], ["FB-106", "Yellow Light", "#F6D921", 1], ["FB-107", "Yellow Light", "#F5D822", 1], ["FB-108", "Yellow Light", "#F3D822", 1], ["FB-109", "Yellow Light", "#F2D723", 1], ["FB-110", "Yellow Light", "#F1D623", 1], ["FB-111", "Yellow Light", "#F0D524", 1], ["FB-112", "Yellow Light", "#EFD424", 1], ["FB-113", "Yellow Soft", "#EED325", 1], ["FB-114", "Yellow Soft", "#EDD225", 1], ["FB-115", "Yellow Soft", "#ECD126", 1], ["FB-116", "Yellow Soft", "#EAD026", 1], ["FB-117", "Yellow Soft", "#E9CF26", 1], ["FB-118", "Yellow Soft", "#E8CE27", 1], ["FB-119", "Yellow Soft", "#E7CD27", 1], ["FB-120", "Yellow Soft", "#E6CD28", 1], ["FB-121", "Yellow Soft", "#E5CC28", 1], ["FB-122", "Yellow Soft", "#E4CB28", 1], ["FB-123", "Yellow Soft", "#E2CA29", 1], ["FB-124", "Yellow Soft", "#E1C929", 1], ["FB-125", "Yellow", "#E0C82A", 1], ["FB-126", "Yellow", "#DFC72A", 1], ["FB-127", "Yellow", "#DEC62A", 1], ["FB-128", "Yellow", "#DDC52B", 1], ["FB-129", "Yellow", "#DCC42B", 1], ["FB-130", "Yellow", "#DBC32B", 1], ["FB-131", "Yellow", "#D9C22C", 1], ["FB-132", "Yellow", "#D8C12C", 1], ["FB-133", "Yellow", "#D7C02C", 1], ["FB-134", "Yellow", "#D6C02D", 1], ["FB-135", "Yellow", "#D5BF2D", 1], ["FB-136", "Yellow", "#D4BE2D", 1], ["FB-137", "Yellow", "#D3BD2E", 1], ["FB-138", "Yellow Deep", "#D2BC2E", 1], ["FB-139", "Yellow Deep", "#D0BB2E", 1], ["FB-140", "Yellow Deep", "#CFBA2F", 1], ["FB-141", "Yellow Deep", "#CEB92F", 1], ["FB-142", "Yellow Deep", "#CDB82F", 1], ["FB-143", "Yellow Deep", "#CCB72F", 1], ["FB-144", "Yellow Deep", "#CBB630", 1], ["FB-145", "Yellow Deep", "#CAB530", 1], ["FB-146", "Yellow Deep", "#C9B430", 1], ["FB-147", "Yellow Deep", "#C7B331", 1], ["FB-148", "Yellow Deep", "#C6B231", 1], ["FB-149", "Yellow Deep", "#C5B131", 1], ["FB-150", "Yellow Dark", "#C4B031", 1], ["FB-151", "Yellow Dark", "#C3AF31", 1], ["FB-152", "Yellow Dark", "#C2AF32", 1], ["FB-153", "Yellow Dark", "#C1AE32", 1], ["FB-154", "Yellow Dark", "#C0AD32", 1], ["FB-155", "Yellow Dark", "#BEAC32", 1], ["FB-156", "Yellow Dark", "#BDAB33", 1], ["FB-157", "Yellow Dark", "#BCAA33", 1], ["FB-158", "Yellow Dark", "#BBA933", 1], ["FB-159", "Yellow Dark", "#BAA833", 1], ["FB-160", "Yellow Dark", "#B9A733", 1], ["FB-161", "Yellow Dark", "#B8A633", 1], ["FB-200", "Orange Light", "#FA730C", 1], ["FB-201", "Orange Light", "#F7730D", 1], ["FB-202", "Orange Light", "#F4720E", 1], ["FB-203", "Orange Light", "#F1710F", 1], ["FB-204", "Orange Light", "#ED7010", 1], ["FB-205", "Orange Soft", "#EA6F11", 1], ["FB-206", "Orange Soft", "#E76E12", 1], ["FB-207", "Orange Soft", "#E46D12", 1], ["FB-208", "Orange Soft", "#E16C13", 1], ["FB-209", "Orange Soft", "#DE6B14", 1], ["FB-210", "Orange", "#DB6A14", 1], ["FB-211", "Orange", "#D86915", 1], ["FB-212", "Orange", "#D56816", 1], ["FB-213", "Orange", "#D26716", 1], ["FB-214", "Orange", "#CE6617", 1], ["FB-215", "Orange Deep", "#CB6517", 1], ["FB-216", "Orange Deep", "#C86418", 1], ["FB-217", "Orange Deep", "#C56318", 1], ["FB-218", "Orange Deep", "#C26219", 1], ["FB-219", "Orange Deep", "#BF6119", 1], ["FB-220", "Orange Dark", "#BC601A", 1], ["FB-221", "Orange Dark", "#B95F1A", 1], ["FB-222", "Orange Dark", "#B65E1A", 1], ["FB-223", "Orange Dark", "#B35D1B", 1], ["FB-224", "Red Light", "#E01220", 1], ["FB-225", "Red Light", "#D31420", 1], ["FB-226", "Red Soft", "#C51521", 1], ["FB-227", "Red Soft", "#B81621", 1], ["FB-228", "Red", "#AA1720", 1], ["FB-229", "Red", "#9C1720", 1], ["FB-230", "Red Deep", "#8F171F", 1], ["FB-231", "Red Deep", "#81161E", 1], ["FB-232", "Red Dark", "#74161C", 1], ["FB-233", "Red Dark", "#66141A", 1], ["FB-234", "Blue Light", "#2469F2", 1], ["FB-235", "Blue Light", "#2561D8", 1], ["FB-236", "Blue Soft", "#2457BD", 1], ["FB-237", "Blue Soft", "#234DA2", 1], ["FB-238", "Blue", "#204388", 1], ["FB-239", "Blue Deep", "#1C376D", 1], ["FB-240", "Blue Deep", "#172B53", 1], ["FB-241", "Blue Dark", "#111E38", 1], ["FB-242", "Black", "#171717", 1], ["FB-243", "Black", "#141414", 1], ["FB-244", "Black", "#101010", 1], ["FB-245", "Black", "#0D0D0D", 1]]}, "flameorange": {"name": "Flame Orange", "country": "Германия", "volumes": {"400": {"cov": 1.6, "price": 520}}, "colors": [["FO-100", "Vanilla", null, 1], ["FO-101", "Yellow Light", "#FBDE1F", 1], ["FO-102", "Yellow Light", "#FADD1F", 1], ["FO-103", "Yellow Light", "#F9DC20", 1], ["FO-104", "Yellow Light", "#F8DB20", 1], ["FO-105", "Yellow Light", "#F7DA21", 1], ["FO-106", "Yellow Light", "#F5D921", 1], ["FO-107", "Yellow Light", "#F4D822", 1], ["FO-108", "Yellow Light", "#F3D722", 1], ["FO-109", "Yellow Light", "#F2D623", 1], ["FO-110", "Yellow Light", "#F1D523", 1], ["FO-111", "Yellow Light", "#F0D424", 1], ["FO-112", "Yellow Soft", "#EED424", 1], ["FO-113", "Yellow Soft", "#EDD325", 1], ["FO-114", "Yellow Soft", "#ECD225", 1], ["FO-115", "Yellow Soft", "#EBD126", 1], ["FO-116", "Yellow Soft", "#EAD026", 1], ["FO-117", "Yellow Soft", "#E9CF27", 1], ["FO-118", "Yellow Soft", "#E7CE27", 1], ["FO-119", "Yellow Soft", "#E6CD27", 1], ["FO-120", "Yellow Soft", "#E5CC28", 1], ["FO-121", "Yellow Soft", "#E4CB28", 1], ["FO-122", "Yellow Soft", "#E3CA29", 1], ["FO-123", "Yellow Soft", "#E2C929", 1], ["FO-124", "Yellow", "#E0C82A", 1], ["FO-125", "Yellow", "#DFC72A", 1], ["FO-126", "Yellow", "#DEC62A", 1], ["FO-127", "Yellow", "#DDC52B", 1], ["FO-128", "Yellow", "#DCC42B", 1], ["FO-129", "Yellow", "#DBC32B", 1], ["FO-130", "Yellow", "#D9C22C", 1], ["FO-131", "Yellow", "#D8C12C", 1], ["FO-132", "Yellow", "#D7C02C", 1], ["FO-133", "Yellow", "#D6BF2D", 1], ["FO-134", "Yellow", "#D5BE2D", 1], ["FO-135", "Yellow", "#D4BD2D", 1], ["FO-136", "Yellow Deep", "#D2BC2E", 1], ["FO-137", "Yellow Deep", "#D1BC2E", 1], ["FO-138", "Yellow Deep", "#D0BB2E", 1], ["FO-139", "Yellow Deep", "#CFBA2F", 1], ["FO-140", "Yellow Deep", "#CEB92F", 1], ["FO-141", "Yellow Deep", "#CDB82F", 1], ["FO-142", "Yellow Deep", "#CBB730", 1], ["FO-143", "Yellow Deep", "#CAB630", 1], ["FO-144", "Yellow Deep", "#C9B530", 1], ["FO-145", "Yellow Deep", "#C8B430", 1], ["FO-146", "Yellow Deep", "#C7B331", 1], ["FO-147", "Yellow Deep", "#C6B231", 1], ["FO-148", "Yellow Dark", "#C4B131", 1], ["FO-149", "Yellow Dark", "#C3B031", 1], ["FO-150", "Yellow Dark", "#C2AF32", 1], ["FO-151", "Yellow Dark", "#C1AE32", 1], ["FO-152", "Yellow Dark", "#C0AD32", 1], ["FO-153", "Yellow Dark", "#BFAC32", 1], ["FO-154", "Yellow Dark", "#BDAB32", 1], ["FO-155", "Yellow Dark", "#BCAA33", 1], ["FO-156", "Yellow Dark", "#BBA933", 1], ["FO-157", "Yellow Dark", "#BAA833", 1], ["FO-158", "Yellow Dark", "#B9A733", 1], ["FO-159", "Yellow Dark", "#B8A633", 1], ["FO-200", "Orange Light", "#FA730C", 1], ["FO-201", "Orange Light", "#F7730D", 1], ["FO-202", "Orange Light", "#F4720E", 1], ["FO-203", "Orange Light", "#F1710F", 1], ["FO-204", "Orange Light", "#EE7010", 1], ["FO-205", "Orange Light", "#EC6F10", 1], ["FO-206", "Orange Soft", "#E96F11", 1], ["FO-207", "Orange Soft", "#E66E12", 1], ["FO-208", "Orange Soft", "#E36D13", 1], ["FO-209", "Orange Soft", "#E06C13", 1], ["FO-210", "Orange Soft", "#DD6B14", 1], ["FO-211", "Orange", "#DA6A15", 1], ["FO-212", "Orange", "#D86915", 1], ["FO-213", "Orange", "#D56816", 1], ["FO-214", "Orange", "#D26816", 1], ["FO-215", "Orange", "#CF6717", 1], ["FO-216", "Orange Deep", "#CC6617", 1], ["FO-217", "Orange Deep", "#C96518", 1], ["FO-218", "Orange Deep", "#C66418", 1], ["FO-219", "Orange Deep", "#C46319", 1], ["FO-220", "Orange Deep", "#C16219", 1], ["FO-221", "Orange Dark", "#BE6119", 1], ["FO-222", "Orange Dark", "#BB601A", 1], ["FO-223", "Orange Dark", "#B85F1A", 1], ["FO-224", "Orange Dark", "#B55E1A", 1], ["FO-225", "Orange Dark", "#B35D1B", 1], ["FO-226", "Red Light", "#E01220", 1], ["FO-227", "Red Light", "#D31420", 1], ["FO-228", "Red Soft", "#C51521", 1], ["FO-229", "Red Soft", "#B81621", 1], ["FO-230", "Red", "#AA1720", 1], ["FO-231", "Red", "#9C1720", 1], ["FO-232", "Red Deep", "#8F171F", 1], ["FO-233", "Red Deep", "#81161E", 1], ["FO-234", "Red Dark", "#74161C", 1], ["FO-235", "Red Dark", "#66141A", 1], ["FO-236", "Green Light", "#2BD92B", 1], ["FO-237", "Green Light", "#2AC52A", 1], ["FO-238", "Green Soft", "#28B128", 1], ["FO-239", "Green Soft", "#269D26", 1], ["FO-240", "Green", "#238923", 1], ["FO-241", "Green Deep", "#207520", 1], ["FO-242", "Green Deep", "#1C611C", 1], ["FO-243", "Green Dark", "#174C17", 1], ["FO-244", "Black Light", "#171717", 1], ["FO-245", "Black Light", "#151515", 1], ["FO-246", "Black Soft", "#131313", 1], ["FO-247", "Black", "#111111", 1], ["FO-248", "Black Deep", "#0F0F0F", 1], ["FO-249", "Black Dark", "#0D0D0D", 1]]}, "trane": {"name": "TRANE", "country": "Россия", "volumes": {"400": {"cov": 1.6, "price": 480}}, "colors": [["6130", "Brown Light", "#804B2D", 1], ["6131", "Brown Light", "#76472B", 1], ["6132", "Brown Soft", "#6D4229", 1], ["6133", "Brown Soft", "#643D26", 1], ["6134", "Brown", "#5B3824", 1], ["6135", "Brown", "#523321", 1], ["6136", "Brown Deep", "#492E1E", 1], ["6137", "Brown Deep", "#40291B", 1], ["6138", "Brown Dark", "#372318", 1], ["6139", "Brown Dark", "#2E1E15", 1], ["6140", "Red Light", "#E01220", 1], ["6141", "Red Light", "#CF1421", 1], ["6142", "Red Soft", "#BD1621", 1], ["6143", "Red Soft", "#AC1721", 1], ["6144", "Red", "#9A1720", 1], ["6145", "Red Deep", "#89171E", 1], ["6146", "Red Deep", "#77161C", 1], ["6147", "Red Dark", "#66141A", 1], ["7210", "Blue Light", "#2469F2", 1], ["7211", "Blue Light", "#2562DE", 1], ["7212", "Blue Soft", "#255CC9", 1], ["7213", "Blue Soft", "#2454B4", 1], ["7214", "Blue", "#234CA0", 1], ["7215", "Blue", "#20448B", 1], ["7216", "Blue Deep", "#1E3B76", 1], ["7217", "Blue Deep", "#1A3261", 1], ["7218", "Blue Dark", "#16284D", 1], ["7219", "Blue Dark", "#111E38", 1], ["7220", "Teal Light", "#22E6E6", 1], ["7221", "Teal Light", "#22C7C7", 1], ["7222", "Teal Soft", "#20A8A8", 1], ["7223", "Teal", "#1D8A8A", 1], ["7224", "Teal Deep", "#196B6B", 1], ["7225", "Teal Dark", "#134C4C", 1], ["8210", "Green Light", "#2BD92B", 1], ["8211", "Green Light", "#2AC92A", 1], ["8212", "Green Soft", "#29BA29", 1], ["8213", "Green Soft", "#28AA28", 1], ["8214", "Green", "#269A26", 1], ["8215", "Green", "#238B23", 1], ["8216", "Green Deep", "#217B21", 1], ["8217", "Green Deep", "#1E6C1E", 1], ["8218", "Green Dark", "#1B5C1B", 1], ["8219", "Green Dark", "#174C17", 1], ["8220", "Olive Light", "#9CB32D", 1], ["8221", "Olive Light", "#8DA12B", 1], ["8222", "Olive Soft", "#7E8F29", 1], ["8223", "Olive", "#6F7D27", 1], ["8224", "Olive Deep", "#5F6B23", 1], ["8225", "Olive Dark", "#50591F", 1], ["9110", "Grey Light", "#EBEFF2", 1], ["9111", "Grey Light", "#E0E4E8", 1], ["9112", "Grey Light", "#D6DADE", 1], ["9113", "Grey Light", "#CBD0D4", 1], ["9114", "Grey Soft", "#C1C5CA", 1], ["9115", "Grey Soft", "#B6BBC0", 1], ["9116", "Grey Soft", "#ACB1B6", 1], ["9117", "Grey Soft", "#A2A7AC", 1], ["9118", "Grey", "#989DA2", 1], ["9119", "Grey", "#8E9398", 1], ["9120", "Grey", "#84898E", 1], ["9121", "Grey Deep", "#7A7F84", 1], ["9122", "Grey Deep", "#70757A", 1], ["9123", "Grey Deep", "#666B70", 1], ["9124", "Grey Deep", "#5D6166", 1], ["9125", "Grey Dark", "#53575C", 1], ["9126", "Grey Dark", "#4A4E51", 1], ["9127", "Grey Dark", "#404447", 1], ["grey-ext", "Grey", "#93989D", 1], ["grey-ext", "Grey", "#93989D", 1], ["grey-ext", "Grey", "#93989D", 1], ["grey-ext", "Grey", "#93989D", 1]]}, "belazo": {"name": "Belazo", "country": "Россия", "volumes": {"400": {"cov": 1.6, "price": 590}, "750": {"cov": 2.8, "price": 915}}, "colors": [["54001", "White Light", "#FFFFFF", 1], ["54002", "Black", "#000000", 0], ["54003", "White Soft", "#FFFFFF", 1], ["54004", "White", "#FFFFFF", 1], ["54005", "White Deep", "#FFFFFF", 1], ["54006", "White Dark", "#FFFFFF", 1], ["54007", "Yellow Light", "#FCDF1E", 1], ["54008", "Yellow Light", "#F1D623", 1], ["54009", "Yellow Soft", "#E6CC28", 1], ["54010", "Yellow", "#DAC32C", 1], ["54011", "Grass Green", "#237818", 0], ["54012", "Yellow Deep", "#C3B031", 1], ["54013", "Yellow Dark", "#B8A633", 1], ["54014", "Orange Light", "#FA730C", 1], ["54015", "Orange Light", "#EC6F10", 1], ["54016", "Orange Soft", "#DD6B14", 1], ["54017", "Orange", "#CF6717", 1], ["54018", "Orange Deep", "#C16219", 1], ["54019", "Orange Dark", "#B35D1B", 1], ["54020", "Red Light", "#E01220", 1], ["54021", "Red Light", "#D71320", 1], ["54022", "Red Light", "#CE1421", 1], ["54023", "Red Soft", "#C41521", 1], ["54024", "Red Soft", "#BB1621", 1], ["54025", "Red Soft", "#B11621", 1], ["54026", "Red", "#A81720", 1], ["54027", "Red", "#9E1720", 1], ["54028", "Red", "#95171F", 1], ["54029", "Red Deep", "#8C171F", 1], ["54030", "Red Deep", "#82161E", 1], ["54031", "Red Deep", "#79161D", 1], ["54032", "Signal Red", "#BE1D28", 0], ["54033", "Red Dark", "#66141A", 1], ["54034", "Cocoa", "#954A2A", 0], ["54035", "Pink Light", "#EA4078", 1], ["54036", "Pink Soft", "#DB4074", 1], ["54037", "Pink Soft", "#CB406E", 1], ["54038", "Pink", "#BB3F68", 1], ["54039", "Pink Deep", "#AC3D62", 1], ["54040", "Pink Deep", "#9C3B5B", 1], ["54041", "Pink Dark", "#8C3854", 1], ["54042", "Blue Light", "#2469F2", 1], ["54043", "Blue Light", "#2561D8", 1], ["54044", "Blue Soft", "#2457BD", 1], ["54045", "Blue Soft", "#234DA2", 1], ["54046", "Blue", "#204388", 1], ["54047", "Blue Deep", "#1C376D", 1], ["54048", "Blue Deep", "#172B53", 1], ["54049", "Blue Dark", "#111E38", 1], ["54050", "Green Light", "#2BD92B", 1], ["54051", "Green Light", "#2AC52A", 1], ["54052", "Green Soft", "#28B128", 1], ["54053", "Green Soft", "#269D26", 1], ["54054", "Green", "#238923", 1], ["54055", "Green Deep", "#207520", 1], ["54056", "Navy Blue", "#1E5B90", 0], ["54057", "Green Dark", "#174C17", 1], ["54058", "Brown Light", "#804B2D", 1], ["54059", "Brown Light", "#72442A", 1], ["54060", "Fluo Green", "#5CFE5E", 0], ["54061", "Fluo Red", "#F90914", 0], ["54062", "Fluo Orange", "#FA4E1C", 0], ["54063", "Fluo Yellow", "#FDE53C", 0], ["54064", "Fluo Pink", "#FB10C9", 0], ["54065", "Grey Light", "#EBEFF2", 1], ["54066", "Grey Light", "#D7DBDF", 1], ["54067", "Grey Soft", "#C3C8CC", 1], ["54068", "Grey Soft", "#AFB4B9", 1], ["54069", "Grey", "#9CA1A6", 1], ["54070", "Grey", "#898E93", 1], ["54071", "Grey Deep", "#777B80", 1], ["54072", "Grey Deep", "#64696D", 1], ["54073", "Grey Dark", "#52565A", 1], ["54074", "Grey Dark", "#404447", 1]]}, "easy": {"name": "Easy", "country": "Россия", "volumes": {"400": {"cov": 1.5, "price": 390}, "1000": {"cov": 3.6, "price": 790}}, "colors": [["EZ-01", "White", "#FFFFFF", 1], ["EZ-02", "White", "#FFFFFF", 1], ["EZ-03", "White", "#FFFFFF", 1], ["EZ-04", "White", "#FFFFFF", 1], ["EZ-05", "Yellow", "#FCDF1E", 1], ["EZ-06", "Yellow", "#E6CC28", 1], ["EZ-07", "Yellow", "#CFB92F", 1], ["EZ-08", "Yellow", "#B8A633", 1], ["EZ-09", "Orange", "#FA730C", 1], ["EZ-10", "Orange", "#D66915", 1], ["EZ-11", "Orange", "#B35D1B", 1], ["EZ-12", "Red", "#E01220", 1], ["EZ-13", "Red", "#B81621", 1], ["EZ-14", "Red", "#8F171F", 1], ["EZ-15", "Red", "#66141A", 1], ["EZ-16", "Pink", "#FA3E7D", 1], ["EZ-17", "Pink", "#C33F6B", 1], ["EZ-18", "Pink", "#8C3854", 1], ["EZ-19", "Blue", "#2469F2", 1], ["EZ-20", "Blue", "#224895", 1], ["EZ-21", "Blue", "#111E38", 1], ["EZ-22", "Teal", "#22E6E6", 1], ["EZ-23", "Teal", "#1F9999", 1], ["EZ-24", "Teal", "#134C4C", 1], ["EZ-25", "Green", "#2BD92B", 1], ["EZ-26", "Green", "#259325", 1], ["EZ-27", "Green", "#174C17", 1], ["EZ-28", "Brown", "#804B2D", 1], ["EZ-29", "Brown", "#2E1E15", 1], ["EZ-30", "Grey", "#EBEFF2", 1]]}}};
+
+/* Маппинг: ключи палитры (нижний регистр) -> ключи калькулятора.
+   Важно: остальной код калькулятора ссылается на "flameOrange"/"flameBlue". */
+const KEY_ALIAS = { flameorange:"flameOrange", flameblue:"flameBlue" };
+
+/* Заметки по объёмам (перенесены из v10.7) */
+const VOL_NOTES = {
+  "arton": "600 и 1000 мл — те же цвета, больше объём на один баллон.",
+  "mtn94": "Палитра насчитывает 216 оттенков, включая флуоресцентные и металлик; в калькуляторе — основная матовая линейка.",
+  "black": "Ultra Wide 750 мл — узкая линейка для заливок. Палитра бренда — 187 оттенков.",
+  "molotow": "Палитра 252 цвета, нумерация #001–#231. Burner 600 мл — в основном хром, золото и медь.",
+  "loop": "Палитра 216 цветов, коды LP-ххх с названиями городов. Maxi 600 мл — только база и металлик.",
+  "flameOrange": "Высокое давление, акрил, 120 матовых цветов. Цена 600 мл ориентировочная — уточни у дилера.",
+  "flameBlue": "Низкое давление, акрил, 120 цветов с официального колор-чарта FLAME BLUE (HEX точные).",
+  "trane": "Палитра 72–80 оттенков; в калькуляторе — основная часть. HEX для части цветов — из карточек Artcompas, остальные по выкрасам.",
+  "easy": "Бюджетная линейка, цвета по RAL + 11 цветных кодов EAS. В наличии в основном белый, чёрный и хром.",
+  "belazo": "Палитра 69 цветов + 5 флуоресцентных (серия 540xx). HEX флуоресцентных и части базовых — из каталога Artcompas, остальные по выкрасам."
 };
 
+/* Объёмы, которых нет в палитре, но которые были в калькуляторе v10.7 */
+const EXTRA_VOLUMES = { "arton|1000": {cov:3.7, price:788}, "flameOrange|600": {cov:2.2, price:950} };
+
+/* Сборка BRANDS из палитры: порядок и ключи как в v10.7,
+   цвета без HEX отбрасываются (код парсит HEX как число). */
+const BRANDS = (() => {
+  const src_ = GRAFFITI_PALETTES_DATA.brands;
+  const byAlias = {};
+  for (const key in src_) byAlias[KEY_ALIAS[key] || key] = src_[key];
+  const order = ["arton", "mtn94", "black", "molotow", "loop", "flameOrange", "flameBlue", "trane", "easy", "belazo"];
+  const map = {};
+  for (const key of order) {
+    const b = byAlias[key];
+    if (!b) { console.warn("BRANDS: нет данных для " + key); continue; }
+    const colors = b.colors.filter(c => c[2]).map(c => [c[0], c[1], c[2]]);
+    const volumes = {};
+    for (const v in b.volumes) volumes[v] = { cov:b.volumes[v].cov, price:b.volumes[v].price };
+    map[key] = { name:b.name, volNote:VOL_NOTES[key] || "", volumes, colors };
+  }
+  for (const tag in EXTRA_VOLUMES) {
+    const p = tag.split("|"), bk = p[0], vol = p[1];
+    if (map[bk] && !map[bk].volumes[vol]) map[bk].volumes[vol] = EXTRA_VOLUMES[tag];
+  }
+  return map;
+})();
+
+/* ---------- Базовые цены скорректированы по проверенным магазинам (ноябрь 2026) ----------
+   Безопасные правки: нет бренда/объёма — предупреждение в консоль, а не падение страницы. */
+function setPrice(key, vol, price){
+  const v = BRANDS[key] && BRANDS[key].volumes[vol];
+  if (v) v.price = price; else console.warn("setPrice: нет " + key + "/" + vol);
+}
+setPrice("arton","400",540);
+setPrice("mtn94","400",690);
+setPrice("black","400",690);
+setPrice("flameOrange","400",550);
+setPrice("flameOrange","600",580);
+setPrice("trane","400",390);
+
 const SURFACES = {
-  smooth:{ label:"гладкая (подготовленная стена)", layers:1, k:1.0,
-    hint:"Подготовленная стена: базовый расход краски." },
-  rough:{ label:"шероховатая (штукатурка, бетон)", layers:2, k:1.15,
-    hint:"Штукатурка/бетон впитывает краску: 2 слоя, расход +15%." },
-  raw:{ label:"неподготовленная", layers:2, k:1.35,
-    hint:"Необработанная поверхность: 2 слоя, расход +35%. Рекомендуем прогрунтовать — иначе баллонов уйдёт больше." }
+  smooth:{ label:"подготовленная", layers:1, k:1.0 },
+  raw:{ label:"неподготовленная", layers:2, k:1.35 }
 };
+
+/* ---------- Языки и страны ---------- */
+const LANGS = { ru:"Русский", en:"English", uk:"Українська", be:"Беларуская",
+                kk:"Қазақша", uz:"O\u02bbzbekcha", ky:"Кыргызча", az:"Azərbaycanca" };
+
+const T = {
+ru:{ sub:"Расчёт баллонов по эскизу", sketch:"Эскиз", load:"Загрузить эскиз",
+ hint_sketch:"Один палец — перетащить, два пальца — увеличить/уменьшить. На компьютере — мышь и колёсико. Эскиз можно двигать прямо по стене.",
+ wall:"Стена", w_lbl:"Ширина, м", h_lbl:"Высота, м", surface:"Поверхность",
+ s1:"Подготовленная", s1sub:"1 слой", s2:"Неподготовленная", s2sub:"2 слоя",
+ hint_smooth:"Подготовленная стена: базовый расход краски.",
+ hint_raw:"Необработанная поверхность: 2 слоя, расход +35%.",
+ gridhint:"Клетка сетки — ровно 1 × 1 м.",
+ paint:"Краска", brand:"Производитель", avail:"В выбранной стране доступны:",
+ volume:"Объём баллона", price_lbl:"Цена баллона", cov_lbl:"Расход, м²/баллон",
+ hint_price:"Цена и расход подставляются автоматически, можно править под своего дилера — правки запоминаются.",
+ calc:"Рассчитать", result:"Результат", preview:"Превью на стене",
+ preview_hint:"Цвета приведены к палитре бренда, светота исходника сохранена. Микрозоны меньше 0,1 м² слиты с ближайшим цветом палитры.",
+ compare:"Сравнение бюджетов",
+ compare_hint:"Один и тот же эскиз прогнан через палитру каждого доступного бренда. Клик по строке — переключить бренд.",
+ pal_chip:"Палитра: ноябрь 2026", err_noimg:"Сначала загрузите эскиз.",
+ err_nopaint:"Не удалось распознать эскиз в границах стены. Проверьте, что эскиз наложен на стену, и попробуйте ещё раз.",
+ cans:"баллонов", total_word:"Итого", h_brand:"Бренд", h_vol:"Объём", h_cans:"Балл.", h_total:"Итого",
+ h_color:"Цвет", lang:"Язык", country:"Страна",
+ rate_lbl:"Справочный курс ЦБ РФ на 14.11.2026: "},
+en:{ sub:"Can estimate from a sketch", sketch:"Sketch", load:"Upload sketch",
+ hint_sketch:"One finger — drag, two fingers — zoom. On desktop — mouse and wheel. The sketch can be moved right on the wall.",
+ wall:"Wall", w_lbl:"Width, m", h_lbl:"Height, m", surface:"Surface",
+ s1:"Prepared", s1sub:"1 coat", s2:"Unprepared", s2sub:"2 coats",
+ hint_smooth:"Prepared wall: basic paint usage.",
+ hint_raw:"Unprepared surface: 2 coats, +35% usage.",
+ gridhint:"Grid cell is exactly 1 × 1 m.",
+ paint:"Paint", brand:"Manufacturer", avail:"Available in the selected country:",
+ volume:"Can size", price_lbl:"Price per can", cov_lbl:"Coverage, m²/can",
+ hint_price:"Price and coverage are filled automatically and can be edited for your dealer — edits are saved.",
+ calc:"Calculate", result:"Result", preview:"Wall preview",
+ preview_hint:"Colors are mapped to the brand palette, original lightness kept. Areas under 0.1 m² merge with the nearest palette color.",
+ compare:"Budget comparison",
+ compare_hint:"The same sketch is run through every available brand palette. Click a row to switch brands.",
+ pal_chip:"Palette: November 2026", err_noimg:"Upload a sketch first.",
+ err_nopaint:"Could not recognize the sketch inside the wall bounds. Make sure it is placed on the wall and try again.",
+ cans:"cans", total_word:"Total", h_brand:"Brand", h_vol:"Size", h_cans:"Cans", h_total:"Total",
+ h_color:"Color", lang:"Language", country:"Country",
+ rate_lbl:"Reference CBR rate as of 14.11.2026: "},
+uk:{ sub:"Розрахунок балонів за ескізом", sketch:"Ескіз", load:"Завантажити ескіз",
+ hint_sketch:"Один палець — перетягнути, два пальці — збільшити/зменшити. На комп'ютері — мишка та коліщатко. Ескіз можна рухати просто по стіні.",
+ wall:"Стіна", w_lbl:"Ширина, м", h_lbl:"Висота, м", surface:"Поверхня",
+ s1:"Підготовлена", s1sub:"1 шар", s2:"Непідготовлена", s2sub:"2 шари",
+ hint_smooth:"Підготовлена стіна: базова витрата фарби.",
+ hint_raw:"Необроблена поверхня: 2 шари, витрата +35%.",
+ gridhint:"Клітинка сітки — рівно 1 × 1 м.",
+ paint:"Фарба", brand:"Виробник", avail:"У вибраній країні доступні:",
+ volume:"Об'єм балона", price_lbl:"Ціна балона", cov_lbl:"Витрата, м²/балон",
+ hint_price:"Ціну та витрату підставлено автоматично, можна виправити під свого дилера — правки зберігаються.",
+ calc:"Розрахувати", result:"Результат", preview:"Прев'ю на стіні",
+ preview_hint:"Кольори наведено до палітри бренду, світлоту оригіналу збережено. Мікрозони менше 0,1 м² злиті з найближчим кольором палітри.",
+ compare:"Порівняння бюджетів",
+ compare_hint:"Той самий ескіз прогнано через палітру кожного доступного бренду. Клік по рядку — переключити бренд.",
+ pal_chip:"Палітра: листопад 2026", err_noimg:"Спочатку завантажте ескіз.",
+ err_nopaint:"Не вдалося розпізнати ескіз у межах стіни. Перевірте, що ескіз накладено на стіну, і спробуйте ще раз.",
+ cans:"балонів", total_word:"Разом", h_brand:"Бренд", h_vol:"Об'єм", h_cans:"Бал.", h_total:"Разом",
+ h_color:"Колір", lang:"Мова", country:"Країна",
+ rate_lbl:"Довідковий курс ЦБ РФ на 14.11.2026: "},
+be:{ sub:"Разлік балонаў па эскізе", sketch:"Эскіз", load:"Загрузіць эскіз",
+ hint_sketch:"Адзін палец — перацягнуць, два пальцы — павялічыць/паменшыць. На кампутары — мыш і колёсік. Эскіз можна рухаць проста па сцяне.",
+ wall:"Стена", w_lbl:"Шырыня, м", h_lbl:"Вышыня, м", surface:"Паверхня",
+ s1:"Падрыхтаваная", s1sub:"1 пласт", s2:"Непадрыхтаваная", s2sub:"2 пласты",
+ hint_smooth:"Падрыхтаваная сцяна: базавы расход фарбы.",
+ hint_raw:"Неапрацаваная паверхня: 2 слаі, расход +35%.",
+ gridhint:"Клетка сеткі — роўна 1 × 1 м.",
+ paint:"Фарба", brand:"Вытворца", avail:"У выбранай краіне даступныя:",
+ volume:"Аб'ём балона", price_lbl:"Цана балона", cov_lbl:"Расход, м²/балон",
+ hint_price:"Цану і расход падстаўлена аўтаматычна, можна паправіць пад свайго дылера — правкі захоўваюцца.",
+ calc:"Разлічыць", result:"Вынік", preview:"Прагляд на сцене",
+ preview_hint:"Колеры прыведзены да палітры брэнда, светлату арыгінала захавана. Мікразони менш за 0,1 м² злітыя з найближчым колерам палітры.",
+ compare:"Параўнанне бюджетаў",
+ compare_hint:"Той самы эскіз прагнаны праз палітру кожнага даступнага брэнда. Клік па радку — пераключыць брэнд.",
+ pal_chip:"Палітра: лістапад 2026", err_noimg:"Спачатку загрузіце эскіз.",
+ err_nopaint:"Не ўдалося распазнаць эскіз у межах сцяны. Праверце, што эскіз накладзены на сцяну, і паспрабуйце яшчэ раз.",
+ cans:"балонаў", total_word:"Усяго", h_brand:"Бранд", h_vol:"Аб'ём", h_cans:"Бал.", h_total:"Усяго",
+ h_color:"Колер", lang:"Мова", country:"Краіна",
+ rate_lbl:"Даведачны курс ЦБ РФ на 14.11.2026: "},
+kk:{ sub:"Эскиз бойынша баллон есебі", sketch:"Эскиз", load:"Эскизді жүктеу",
+ hint_sketch:"Бір саусақ — сүйреу, екі саусақ — үлкейту/кішірейту. Компьютерде — тышқан мен дөңгелек. Эскизді қабырғада жылжытуға болады.",
+ wall:"Қабырға", w_lbl:"Ені, м", h_lbl:"Биіктігі, м", surface:"Бет",
+ s1:"Өңделген", s1sub:"1 қабат", s2:"Өңделмеген", s2sub:"2 қабат",
+ hint_smooth:"Өңделген қабырға: бояудың негізгі шығыны.",
+ hint_raw:"Өңделмеген бет: 2 қабат, шығын +35%.",
+ gridhint:"Тор ұяшығы — дәл 1 × 1 м.",
+ paint:"Бояу", brand:"Өндіруші", avail:"Таңдалған елде қолжетімді:",
+ volume:"Баллон көлемі", price_lbl:"Баллон бағасы", cov_lbl:"Шығын, м²/баллон",
+ hint_price:"Баға мен шығын автоматты түрде қойылады, дилеріңізге қарай түзете аласыз — түзетулер сақталады.",
+ calc:"Есептеу", result:"Нәтиже", preview:"Қабырғадағы көрініс",
+ preview_hint:"Түстер бренд палитрасына келтірілген, түпнұсқаның жарықтығы сақталған. 0,1 м²-ден кіші микрозоналар палитрадағы ең жақын түспен біріктірілген.",
+ compare:"Бюджеттерді салыстыру",
+ compare_hint:"Бір эскиз әр қолжетімді бренд палитрасы арқылы есептелген. Жолды басу — брендті ауыстыру.",
+ pal_chip:"Палитра: 2026 ж. қараша", err_noimg:"Алдымен эскизді жүктеңіз.",
+ err_nopaint:"Эскизді қабырға шегінде тану мүмкін болмады. Эскизді қабырғаға орналастырып, қайта көріңіз.",
+ cans:"баллон", total_word:"Барлығы", h_brand:"Бренд", h_vol:"Көлем", h_cans:"Бал.", h_total:"Барлығы",
+ h_color:"Түс", lang:"Тіл", country:"Ел",
+ rate_lbl:"Анықтамалық бағам (ЦБ РФ) 14.11.2026: "},
+uz:{ sub:"Eskiz bo'yicha ballon hisobi", sketch:"Eskiz", load:"Eskizni yuklash",
+ hint_sketch:"Bitta barmoq — sudrab o'tkazish, ikkita barmoq — kattalashtirish/kichiklashtirish. Kompyuterda — sichqoncha va g'ildirak. Eskizni devorda sudrab ko'chirish mumkin.",
+ wall:"Devor", w_lbl:"Kenglik, m", h_lbl:"Balandlik, m", surface:"Sirt",
+ s1:"Tayyorlangan", s1sub:"1 qatlam", s2:"Tayyorlanmagan", s2sub:"2 qatlam",
+ hint_smooth:"Tayyorlangan devor: bo'yoqning asosiy sarfi.",
+ hint_raw:"Ishlanmagan sirt: 2 qatlam, sarf +35%.",
+ gridhint:"To'r katakchasi — aynan 1 × 1 m.",
+ paint:"Bo'yoq", brand:"Ishlab chiqaruvchi", avail:"Tanlangan mamlakatda mavjud:",
+ volume:"Ballon hajmi", price_lbl:"Ballon narxi", cov_lbl:"Sarf, m²/ballon",
+ hint_price:"Narx va sarf avtomatik qo'yiladi, dilingiz uchun tuzatish mumkin — tuzatishlar saqlanadi.",
+ calc:"Hisoblash", result:"Natija", preview:"Devordagi ko'rinish",
+ preview_hint:"Ranglar brend palitrasiga keltirilgan, asl yorqinlik saqlangan. 0,1 m² dan kichik mikrozona palitradagi eng yaqin rang bilan birlashtirilgan.",
+ compare:"Byudjetlarni solishtirish",
+ compare_hint:"Bir xil eskiz har bir mavjud brend palitrasi orqali hisoblangan. Qatorni bosish — brendni almashtirish.",
+ pal_chip:"Palitra: 2026-yil noyabr", err_noimg:"Avval eskizni yuklang.",
+ err_nopaint:"Eskizni devor chegarasida tanib bo'lmadi. Eskizni devorga joylashtirib, qayta urinib ko'ring.",
+ cans:"ballon", total_word:"Jami", h_brand:"Brend", h_vol:"Hajm", h_cans:"Ball.", h_total:"Jami",
+ h_color:"Rang", lang:"Til", country:"Mamlakat",
+ rate_lbl:"Ma'lumotnomaviy kurs (CBR) 14.11.2026: "},
+ky:{ sub:"Эскиз боюнча баллон эсеби", sketch:"Эскиз", load:"Эскизди жүктөө",
+ hint_sketch:"Бир манжа — сүйрөө, эки манжа — чоңойтуу/кичирейтүү. Компьютерде — чычкан жана дөңгөлөк. Эскизди дубалда жылдырууга болот.",
+ wall:"Дубал", w_lbl:"Туурасы, м", h_lbl:"Бийиктиги, м", surface:"Бет",
+ s1:"Даярдалган", s1sub:"1 катмар", s2:"Даярдалбаган", s2sub:"2 катмар",
+ hint_smooth:"Даярдалган дубал: боёктун негизги чыгашасы.",
+ hint_raw:"Иштетилбеген бет: 2 катмар, чыгаша +35%.",
+ gridhint:"Тордун клеткасы — так 1 × 1 м.",
+ paint:"Боёк", brand:"Өндүрүүчү", avail:"Тандалган өлкөдө жеткиликтүү:",
+ volume:"Баллон көлөмү", price_lbl:"Баллон баасы", cov_lbl:"Чыгаша, м²/баллон",
+ hint_price:"Баа жана чыгаша автоматтык түрдө коюлат, дилериңизге жараша оңдоого болот — оңдоолор сакталат.",
+ calc:"Эсептөө", result:"Натыйжа", preview:"Дубалда көрсөтүү",
+ preview_hint:"Түстөр бренд палитрасына келтирилген, түпнусканын жарыктыгы сакталган. 0,1 м² кичине микрозонpalитрадагы эң жакын түс менен бириктирилген.",
+ compare:"Бюджеттерди салыштыруу",
+ compare_hint:"Бир эскиз ар бир жеткиликтүү бренд палитрасы аркылуу эсептелген. Сапты басуу — брендти алмаштыруу.",
+ pal_chip:"Палитра: 2026-ж. ноябрь", err_noimg:"Адегенде эскизди жүктөңүз.",
+ err_nopaint:"Эскизди дубал чегинде таануу мүмкүн болбоду. Эскизди дубалга коюп, кайра аракет кылыңыз.",
+ cans:"баллон", total_word:"Бардыгы", h_brand:"Бренд", h_vol:"Көлөм", h_cans:"Бал.", h_total:"Бардыгы",
+ h_color:"Түс", lang:"Тил", country:"Өлкө",
+ rate_lbl:"Маалыматтык курс (ЦБ РФ) 14.11.2026: "},
+az:{ sub:"Eskiz üzrə balon hesabı", sketch:"Eskiz", load:"Eskizi yüklə",
+ hint_sketch:"Bir barmaq — sürüşdürmə, iki barmaq — böyüdüb kiçiltmə. Kompüterdə — siçan və təkər. Eskizi divarda sürüşdürmək olar.",
+ wall:"Divar", w_lbl:"Eni, m", h_lbl:"Hündürlüyü, m", surface:"Səth",
+ s1:"Hazırlanmış", s1sub:"1 təbəqə", s2:"Hazırlanmamış", s2sub:"2 təbəqə",
+ hint_smooth:"Hazırlanmış divar: boyanın əsas sərfi.",
+ hint_raw:"İşlənməmiş səth: 2 təbəqə, sərf +35%.",
+ gridhint:"Tor xanası — dəqiq 1 × 1 m.",
+ paint:"Boya", brand:"İstehsalçı", avail:"Seçilmiş ölkədə mövcuddur:",
+ volume:"Balon həcmi", price_lbl:"Balon qiyməti", cov_lbl:"Sərf, m²/balon",
+ hint_price:"Qiymət və sərf avtomatik qoyulur, dilerinizə görə düzəliş edə bilərsiniz — düzəlişlər yadda saxlanılır.",
+ calc:"Hesabla", result:"Nəticə", preview:"Divarda önizləmə",
+ preview_hint:"Rənglər brend palitrasına gətirilir, orijinalın işıqlığı saxlanılır. 0,1 m²-dən kiçik mikrozona palitradakı ən yaxın rənglə birləşdirilir.",
+ compare:"Büdcələrin müqayisəsi",
+ compare_hint:"Eyni eskiz hər mövcud brend palitrası vasitəsilə hesablanıb. Sətirə klikləmə — brendi dəyişmək.",
+ pal_chip:"Palitra: noyabr 2026", err_noimg:"Əvvəlcə eskizi yükləyin.",
+ err_nopaint:"Eskizi divar sərhədləri daxilində tanımaq olmadı. Eskizi divara yerləşdirib yenidən cəhd edin.",
+ cans:"balon", total_word:"Cəmi", h_brand:"Brend", h_vol:"Həcm", h_cans:"Bal.", h_total:"Cəmi",
+ h_color:"Rəng", lang:"Dil", country:"Ölkə",
+ rate_lbl:"Məlumat kursu (CBR) 14.11.2026: "}
+};
+
+/* Курсы: ₽ за 1 единицу валюты, ЦБ РФ на 14.11.2026.
+   Проверенные цены магазинов учтены базой (см. правки BRANDS выше),
+   в остальных странах цена считается из рублёвой базы по курсу. */
+const COUNTRIES = {
+  ru:{ name:"Россия",        cur:"₽",   rate:1 },
+  by:{ name:"Беларусь",      cur:"Br",  rate:33.4 },
+  kz:{ name:"Казахстан",     cur:"₸",   rate:0.1235 },
+  ua:{ name:"Украина",       cur:"₴",   rate:2.226 },
+  uz:{ name:"Узбекистан",    cur:"сум", rate:0.00467 },
+  kg:{ name:"Кыргызстан",    cur:"сом", rate:0.47 },
+  az:{ name:"Азербайджан",   cur:"₼",   rate:34.5 },
+  am:{ name:"Армения",       cur:"֏",   rate:0.21 },
+  tj:{ name:"Таджикистан",   cur:"смн", rate:9.0 },
+  md:{ name:"Молдова",       cur:"лей", rate:50 }
+};
+
+/* Отечественные бренды продаются в РФ, Беларуси и Казахстане;
+   импортные (MTN 94, Montana BLACK, Molotow) — во всех остальных странах СНГ. */
+const LOCAL_BRANDS = ["arton","trane","loop","flameOrange","flameBlue","easy","belazo"];
+function brandAvailable(key, c){
+  if (c === "ru" || c === "by" || c === "kz") return true;
+  return LOCAL_BRANDS.indexOf(key) < 0;
+}
 
 /* ---------- Состояние ---------- */
 let surface = "smooth";
-let img = null;                 // исходник эскиза
-let tr = null;                  // {k: м/px эскиза, ox, oy: м}
+let img = null;
+let tr = null;
 let pointers = new Map();
 let pinchStart = null;
+const volSel = {};
+const overrides = {};   // "бренд|объём|страна" -> {price, cov}
+let state = { lang:"ru", country:"ru" };
+try {
+  const s = JSON.parse(localStorage.getItem("gc106") || "{}");
+  if (s.lang && T[s.lang]) state.lang = s.lang;
+  if (s.country && COUNTRIES[s.country]) state.country = s.country;
+} catch(e){}
+function saveState(){ try{ localStorage.setItem("gc106", JSON.stringify(state)); }catch(e){} }
+function t(k){ return (T[state.lang] && T[state.lang][k]) || T.ru[k] || k; }
 
 /* ---------- DOM ---------- */
 const $ = id => document.getElementById(id);
@@ -227,27 +436,86 @@ const canvas = $("wall"), ctx = canvas.getContext("2d");
 const previewC = $("preview"), pctx = previewC.getContext("2d");
 const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
 
+function fmt(n){
+  if (n >= 1000) return Math.round(n).toLocaleString("ru-RU");
+  return (Math.round(n * 10) / 10).toLocaleString("ru-RU");
+}
 function wallWH(){
   const w = parseFloat($("wallW").value) || 3;
   const h = parseFloat($("wallH").value) || 2;
-  return [Math.max(0.5, w), Math.max(0.5, h)];
+  return [Math.min(60, Math.max(0.5, w)), Math.min(60, Math.max(0.5, h))];
 }
 function curBrand(){ return BRANDS[$("brand").value]; }
 function curVol(){ return $("vol").value; }
+function curCur(){ return COUNTRIES[state.country].cur; }
+function localPrice(brandKey, vol){
+  const v = BRANDS[brandKey].volumes[vol];
+  const rate = COUNTRIES[state.country].rate;
+  const raw = v.price / rate;
+  return raw >= 100 ? Math.round(raw) : Math.round(raw * 10) / 10;
+}
+function effPrice(brandKey, vol){
+  const key = brandKey + "|" + vol + "|" + state.country;
+  return overrides[key] ? overrides[key].price : localPrice(brandKey, vol);
+}
+function effCov(brandKey, vol){
+  const key = brandKey + "|" + vol + "|" + state.country;
+  return overrides[key] ? overrides[key].cov : BRANDS[brandKey].volumes[vol].cov;
+}
+
+/* ---------- Язык ---------- */
+function applyLang(){
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $("surfaceHint").textContent = t(surface === "smooth" ? "hint_smooth" : "hint_raw");
+  updateMoneyLabels();
+  updateRateLine();
+}
+function updateMoneyLabels(){
+  $("priceLbl").textContent = t("price_lbl") + ", " + curCur();
+}
+function updateRateLine(){
+  const c = COUNTRIES[state.country];
+  const r = c.rate >= 1 ? fmt(c.rate) : String(c.rate).replace(".", ",");
+  $("rateLine").textContent = t("rate_lbl") + "1 " + c.cur + " = " + r + " ₽";
+}
 
 /* ---------- Селекты ---------- */
-(function initSelects(){
-  const bs = $("brand");
-  for (const key in BRANDS){
+function fillLangs(){
+  const ls = $("lang"); ls.innerHTML = "";
+  for (const key in LANGS){
     const o = document.createElement("option");
-    o.value = key; o.textContent = BRANDS[key].name;
-    bs.appendChild(o);
+    o.value = key; o.textContent = LANGS[key];
+    ls.appendChild(o);
   }
-  bs.addEventListener("change", () => { fillVols(); autoFill(); });
-  $("vol").addEventListener("change", autoFill);
-  fillVols(); autoFill();
-})();
-
+  ls.value = state.lang;
+}
+function fillCountries(){
+  const cs = $("country"); cs.innerHTML = "";
+  for (const key in COUNTRIES){
+    const o = document.createElement("option");
+    o.value = key; o.textContent = COUNTRIES[key].name;
+    cs.appendChild(o);
+  }
+  cs.value = state.country;
+}
+function availKeys(){
+  return Object.keys(BRANDS).filter(k => brandAvailable(k, state.country));
+}
+function fillBrands(keepKey){
+  const bs = $("brand"); bs.innerHTML = "";
+  const keys = availKeys();
+  keys.forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = BRANDS[k].name;
+    bs.appendChild(o);
+  });
+  if (keys.indexOf(keepKey) >= 0) bs.value = keepKey;
+  else if (keys.indexOf($("brand").dataset.last) >= 0) bs.value = $("brand").dataset.last;
+  else if (keys.length) bs.value = keys[0];
+  bs.dataset.last = bs.value;
+  $("availLine").textContent = t("avail") + " " + keys.map(k => BRANDS[k].name).join(", ");
+}
 function fillVols(){
   const vs = $("vol"); vs.innerHTML = "";
   const note = curBrand().volNote;
@@ -257,14 +525,41 @@ function fillVols(){
   vols.forEach(v => {
     const o = document.createElement("option");
     o.value = v;
-    o.textContent = v + " мл" + (v === "750" ? " (Ultra Wide)" : v === "600" ? " (большой)" : "");
+    o.textContent = v + " мл" + (v === "1000" ? " (мега)" : v === "750" ? " (большой)" : v === "600" ? " (большой)" : "");
     vs.appendChild(o);
   });
+  const sel = volSel[$("brand").value];
+  if (sel && vols.indexOf(sel) >= 0) vs.value = sel;
 }
 function autoFill(){
-  const v = curBrand().volumes[curVol()];
-  $("price").value = v.price;
-  $("cov").value = v.cov;
+  $("price").value = effPrice($("brand").value, curVol());
+  $("cov").value = effCov($("brand").value, curVol());
+}
+function saveOverride(){
+  const key = $("brand").value + "|" + curVol() + "|" + state.country;
+  overrides[key] = { price: parseFloat($("price").value) || 0, cov: parseFloat($("cov").value) || 1.5 };
+}
+
+(function initSelects(){
+  fillLangs(); fillCountries();
+  applyLang();
+  fillBrands();
+  fillVols(); autoFill();
+  updatePalChip();
+
+  $("lang").addEventListener("change", () => { state.lang = $("lang").value; saveState(); applyLang(); fillBrands($("brand").value); });
+  $("country").addEventListener("change", () => {
+    state.country = $("country").value; saveState();
+    fillBrands(); fillVols(); autoFill(); updateMoneyLabels(); updateRateLine(); updatePalChip();
+  });
+  $("brand").addEventListener("change", () => { $("brand").dataset.last = $("brand").value; fillVols(); autoFill(); updatePalChip(); });
+  $("vol").addEventListener("change", () => { volSel[$("brand").value] = $("vol").value; autoFill(); });
+  $("price").addEventListener("change", saveOverride);
+  $("cov").addEventListener("change", saveOverride);
+})();
+
+function updatePalChip(){
+  $("palChip").textContent = t("pal_chip") + " · " + curBrand().colors.length;
 }
 
 /* ---------- Поверхность ---------- */
@@ -273,7 +568,7 @@ $("surfaceChips").addEventListener("click", e => {
   document.querySelectorAll("#surfaceChips .chip").forEach(c => c.classList.remove("on"));
   chip.classList.add("on");
   surface = chip.dataset.s;
-  $("surfaceHint").textContent = SURFACES[surface].hint;
+  $("surfaceHint").textContent = t(surface === "smooth" ? "hint_smooth" : "hint_raw");
 });
 
 /* ---------- Загрузка эскиза ---------- */
@@ -288,7 +583,6 @@ $("file").addEventListener("change", e => {
   r.readAsDataURL(f);
   e.target.value = "";
 });
-$("centerBtn").addEventListener("click", () => { if (img){ centerSketch(); drawWall(); } });
 
 function centerSketch(){
   const [W, H] = wallWH();
@@ -296,69 +590,84 @@ function centerSketch(){
   tr = { k, ox:(W - img.width * k) / 2, oy:(H - img.height * k) / 2 };
 }
 
-/* ---------- Холст стены + СЕТКА (по м², обе оси) ---------- */
+/* ---------- Холст стены: фон -> эскиз -> СЕТКА ПОВЕРХ ----------
+   Клетка строго 1 × 1 м: масштаб по вертикали равен масштабу по горизонтали. */
+function drawGrid(c, W, H, cw, ch, color){
+  const ppm = cw / W;                 // пикселей на метр — одинаково по осям
+  c.lineWidth = Math.max(1, dpr * 0.7);
+  c.strokeStyle = color;
+  for (let i = 1; i < W; i++){        // вертикали через каждый 1 м
+    c.beginPath(); c.moveTo(i * ppm, 0); c.lineTo(i * ppm, ch); c.stroke();
+  }
+  for (let j = 1; j < H; j++){        // горизонтали через каждый 1 м
+    c.beginPath(); c.moveTo(0, j * ppm); c.lineTo(cw, j * ppm); c.stroke();
+  }
+}
+function drawGridLabels(c, W, H, cw, ch){
+  const ppm = cw / W;
+  if (ppm < 26 * dpr) return;         // при очень мелкой сетке метки не читаются
+  c.font = (11 * dpr) + "px sans-serif";
+  c.lineWidth = 3 * dpr;
+  c.strokeStyle = "rgba(11,11,20,.85)";
+  c.fillStyle = "rgba(0,229,255,0.9)";
+  for (let i = 1; i < W; i++){
+    c.strokeText(i + " м", i * ppm + 4 * dpr, 14 * dpr);
+    c.fillText(i + " м", i * ppm + 4 * dpr, 14 * dpr);
+  }
+  for (let j = 1; j < H; j++){
+    c.strokeText(j + " м", 5 * dpr, j * ppm + 14 * dpr);
+    c.fillText(j + " м", 5 * dpr, j * ppm + 14 * dpr);
+  }
+}
 function drawWall(){
   const [W, H] = wallWH();
-  const cw = canvas.clientWidth * dpr;
-  const ch = cw * H / W;
+  if (!canvas.clientWidth) { requestAnimationFrame(drawWall); return; }
+  const cw = Math.round(canvas.clientWidth * dpr);
+  const ch = Math.round(cw * H / W);
   canvas.width = cw; canvas.height = ch;
   canvas.style.height = (cw / dpr * H / W) + "px";
+  const ppm = cw / W;
 
-  const ppm = cw / W; // пикселей устройства на метр
-
-  // фон
   ctx.clearRect(0, 0, cw, ch);
   ctx.fillStyle = "#10101c";
   ctx.fillRect(0, 0, cw, ch);
 
-  // сетка: вертикальные И горизонтальные линии каждый метр
-  ctx.lineWidth = Math.max(1, dpr * 0.7);
-  for (let i = 1; i < Math.round(W); i++){
-    ctx.strokeStyle = "rgba(0,229,255,0.28)";
-    ctx.beginPath(); ctx.moveTo(i * ppm, 0); ctx.lineTo(i * ppm, ch); ctx.stroke();
-  }
-  for (let j = 1; j < Math.round(H); j++){
-    ctx.strokeStyle = "rgba(0,229,255,0.28)";
-    ctx.beginPath(); ctx.moveTo(0, j * ppm); ctx.lineTo(cw, j * ppm); ctx.stroke();
-  }
-  // подписи метров по верхней и левой кромке
-  ctx.font = (11 * dpr) + "px sans-serif";
-  ctx.fillStyle = "rgba(0,229,255,0.75)";
-  for (let i = 1; i < Math.round(W); i++)
-    ctx.fillText(i + " м", i * ppm + 4 * dpr, 14 * dpr);
-  for (let j = 1; j < Math.round(H); j++)
-    ctx.fillText(j + " м", 5 * dpr, j * ppm + 14 * dpr);
-
-  // эскиз
   if (img && tr){
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 12 * dpr;
-    ctx.drawImage(img,
-      tr.ox * ppm, tr.oy * ppm,
-      img.width * tr.k * ppm, img.height * tr.k * ppm);
+    ctx.drawImage(img, tr.ox * ppm, tr.oy * ppm, img.width * tr.k * ppm, img.height * tr.k * ppm);
     ctx.restore();
   }
+
+  drawGrid(ctx, W, H, cw, ch, "rgba(0,229,255,0.28)");
+  drawGridLabels(ctx, W, H, cw, ch);
 }
 
-/* ---------- Жесты ---------- */
-function pt(e){
+/* Ручной ввод размеров: перестраиваем стену и сетку сразу при вводе */
+$("wallW").addEventListener("input", drawWall);
+$("wallH").addEventListener("input", drawWall);
+$("wallW").addEventListener("change", drawWall);
+$("wallH").addEventListener("change", drawWall);
+
+/* ---------- Жесты: перетаскивание и пинч ----------
+   Pointer-события + фолбэк на touch для старых Android WebView. */
+function evPos(e){
   const r = canvas.getBoundingClientRect();
   return { x:(e.clientX - r.left) * dpr, y:(e.clientY - r.top) * dpr };
 }
-canvas.addEventListener("pointerdown", e => {
-  if (!img) return;
-  canvas.setPointerCapture(e.pointerId);
-  pointers.set(e.pointerId, pt(e));
-  if (pointers.size === 2) pinchStart = null;
-  e.preventDefault();
-});
-canvas.addEventListener("pointermove", e => {
-  if (!img || !pointers.has(e.pointerId)) return;
+function clampK(k){
+  if (!img) return k;
   const [W, H] = wallWH();
+  return Math.min(Math.max(k, 0.05 * Math.min(W / img.width, H / img.height)),
+                  6 * Math.max(W / img.width, H / img.height));
+}
+function startDrag(id, p){ pointers.set(id, p); if (pointers.size === 2) pinchStart = null; }
+function moveDrag(id, p){
+  if (!img || !pointers.has(id)) return;
+  const [W] = wallWH();
   const ppm = canvas.clientWidth * dpr / W;
-  const p = pt(e), prev = pointers.get(e.pointerId);
-  pointers.set(e.pointerId, p);
-
+  const prev = pointers.get(id);
+  pointers.set(id, p);
   if (pointers.size === 1){
     tr.ox += (p.x - prev.x) / ppm;
     tr.oy += (p.y - prev.y) / ppm;
@@ -379,18 +688,48 @@ canvas.addEventListener("pointermove", e => {
     }
     drawWall();
   }
-  e.preventDefault();
-});
-function endPointer(e){
-  pointers.delete(e.pointerId); pinchStart = null;
 }
-canvas.addEventListener("pointerup", endPointer);
-canvas.addEventListener("pointercancel", endPointer);
+function endDrag(id){ pointers.delete(id); pinchStart = null; }
+
+if (window.PointerEvent){
+  canvas.addEventListener("pointerdown", e => {
+    if (!img) return;
+    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+    startDrag(e.pointerId, evPos(e));
+    e.preventDefault();
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!pointers.has(e.pointerId)) return;
+    moveDrag(e.pointerId, evPos(e));
+    e.preventDefault();
+  }, { passive:false });
+  ["pointerup","pointercancel","pointerleave"].forEach(n =>
+    canvas.addEventListener(n, e => endDrag(e.pointerId)));
+} else {
+  /* фолбэк: тач-события */
+  canvas.addEventListener("touchstart", e => {
+    if (!img) return;
+    for (const tc of e.changedTouches) startDrag(tc.identifier, evPos(tc));
+    e.preventDefault();
+  }, { passive:false });
+  canvas.addEventListener("touchmove", e => {
+    for (const tc of e.changedTouches) moveDrag(tc.identifier, evPos(tc));
+    e.preventDefault();
+  }, { passive:false });
+  ["touchend","touchcancel"].forEach(n =>
+    canvas.addEventListener(n, e => { for (const tc of e.changedTouches) endDrag(tc.identifier); }));
+}
+/* мышь без PointerEvent (старые браузеры) */
+if (!window.PointerEvent){
+  canvas.addEventListener("mousedown", e => { if (img) startDrag("mouse", evPos(e)); });
+  window.addEventListener("mousemove", e => { if (pointers.has("mouse")) moveDrag("mouse", evPos(e)); });
+  window.addEventListener("mouseup", () => endDrag("mouse"));
+}
 canvas.addEventListener("wheel", e => {
   if (!img) return;
-  const [W, H] = wallWH();
+  const [W] = wallWH();
   const ppm = canvas.clientWidth * dpr / W;
-  const p = pt(e);
+  const p = evPos(e);
   const wallPt = { x:p.x / ppm, y:p.y / ppm };
   const kNew = clampK(tr.k * (e.deltaY < 0 ? 1.1 : 0.9));
   const r = kNew / tr.k;
@@ -399,19 +738,12 @@ canvas.addEventListener("wheel", e => {
   tr.k = kNew;
   drawWall(); e.preventDefault();
 }, { passive:false });
-function clampK(k){
-  const [W, H] = wallWH();
-  return Math.min(Math.max(k, 0.05 * Math.min(W / img.width, H / img.height)),
-                  6 * Math.max(W / img.width, H / img.height));
-}
 
-/* Пересчёт холста при ресайзе БЕЗ сброса трансформации */
 let rzT = null;
 window.addEventListener("resize", () => {
   clearTimeout(rzT);
   rzT = setTimeout(drawWall, 100);
 });
-
 /* ---------- Lab ---------- */
 function srgb2lab(r, g, b){
   r /= 255; g /= 255; b /= 255;
@@ -426,13 +758,108 @@ function srgb2lab(r, g, b){
   return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
 }
 
+/* ---------- Анализ эскиза: квантование + СЛИЯНИЕ МИКРОЗОН ----------
+   Цвета с площадью ниже MIN_AREA сливаются в ближайший по палитре цвет:
+   иначе каждый "шумовой" оттенок со сглаженных краёв тянет целый баллон. */
+function palRGB(colors){
+  return colors.map(c => [
+    parseInt(c[2].slice(1,3),16), parseInt(c[2].slice(3,5),16), parseInt(c[2].slice(5,7),16)
+  ]);
+}
+function analyze(data, pw, ph, pxPerM2, colors, labs, step, wantMapped){
+  const N = pw * ph;
+  const bestIdx = new Uint16Array(N);
+  const cnt = new Array(colors.length).fill(0);
+  let used = 0;
+  for (let i = 0; i < N; i += step){
+    const a = data[i * 4 + 3];
+    const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+    if (a < 30 || (r > 240 && g > 240 && b > 240)){ bestIdx[i] = 0xFFFF; continue; }
+    const lab = srgb2lab(r, g, b);
+    let best = 0, bd = 1e12;
+    for (let c = 0; c < labs.length; c++){
+      const dl = lab[0] - labs[c][0], da = lab[1] - labs[c][1], db = lab[2] - labs[c][2];
+      const d = dl*dl + da*da + db*db;
+      if (d < bd){ bd = d; best = c; }
+    }
+    bestIdx[i] = best; cnt[best]+=step; used++;
+  }
+  if (!used) return null;
+
+  const painted = used * step / pxPerM2;
+  const MIN_AREA = Math.max(0.1, 0.002 * painted);
+  const remap = new Int16Array(colors.length).fill(-1);
+  const kept = [];
+  let maxC = -1, maxN = 0;
+  for (let c = 0; c < colors.length; c++){
+    if (!cnt[c]) continue;
+    if (cnt[c] / pxPerM2 >= MIN_AREA){ remap[c] = c; kept.push(c); }
+    if (cnt[c] > maxN){ maxN = cnt[c]; maxC = c; }
+  }
+  if (!kept.length && maxC >= 0) remap[maxC] = maxC; // страховка: всё микроскопическое — берём крупнейший
+  for (let d = 0; d < colors.length; d++){
+    if (remap[d] !== -1 || !cnt[d]) continue;
+    let bk = -1, bd = 1e12;
+    for (const c of kept){
+      const dl = labs[d][0] - labs[c][0], da = labs[d][1] - labs[c][1], db = labs[d][2] - labs[c][2];
+      const dd = dl*dl + da*da + db*db;
+      if (dd < bd){ bd = dd; bk = c; }
+    }
+    remap[d] = bk < 0 ? d : bk;
+  }
+
+  const counts = new Array(colors.length).fill(0);
+  const centroids = colors.map(() => ({ x:0, y:0, n:0 }));
+  let mapped = null;
+  const PRG = palRGB(colors);
+  if (wantMapped) mapped = new Uint8ClampedArray(N * 4);
+  for (let i = 0; i < N; i += step){
+    const b0 = bestIdx[i];
+    if (b0 === 0xFFFF) continue;
+    const c = remap[b0] < 0 ? b0 : remap[b0];
+    counts[c]+=step;
+    const cx = i % pw, cy = (i / pw) | 0;
+    centroids[c].x += cx; centroids[c].y += cy; centroids[c].n++;
+    if (wantMapped){
+      const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+      const pr = PRG[c][0], pg = PRG[c][1], pb = PRG[c][2];
+      const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+      const plum = (0.299*pr + 0.587*pg + 0.114*pb) / 255;
+      const f = plum > 0.02 ? lum / plum : lum;
+      mapped[i*4]   = Math.min(255, pr * f);
+      mapped[i*4+1] = Math.min(255, pg * f);
+      mapped[i*4+2] = Math.min(255, pb * f);
+      mapped[i*4+3] = 255;
+    }
+  }
+  return { counts, centroids, used: used * step, painted, mapped };
+}
+
+function buildRows(counts, pxPerM2, factor, cov, price, colors){
+  const rows = [];
+  let totalCans = 0, totalCost = 0;
+  for (let c = 0; c < colors.length; c++){
+    if (!counts[c]) continue;
+    const area = counts[c] / pxPerM2;
+    const need = area * factor * 1.1; // запас 10%
+    const cans = Math.ceil(need / cov);
+    if (cans < 1 || area < 0.005) continue; // нулевые строки не показываем и не считаем
+    totalCans += cans;
+    const cost = cans * price;
+    totalCost += cost;
+    rows.push({ c, area, cans, cost });
+  }
+  rows.sort((a, b) => b.cans - a.cans || b.area - a.area);
+  return { rows, totalCans, totalCost };
+}
+
+
 /* ---------- Расчёт ---------- */
 $("calcBtn").addEventListener("click", () => {
   const err = $("err"); err.style.display = "none";
-  if (!img || !tr){ showErr("Сначала загрузите эскиз."); return; }
+  if (!img || !tr){ showErr(t("err_noimg")); return; }
 
   const [W, H] = wallWH();
-  // разрешение обработки: ~40 px на метр
   let ppmP = 40;
   const maxSide = 500;
   if (Math.max(W, H) * ppmP > maxSide) ppmP = maxSide / Math.max(W, H);
@@ -441,111 +868,162 @@ $("calcBtn").addEventListener("click", () => {
   const off = document.createElement("canvas");
   off.width = pw; off.height = ph;
   const octx = off.getContext("2d", { willReadFrequently:true });
-  octx.drawImage(img,
-    tr.ox * ppmP, tr.oy * ppmP,
-    img.width * tr.k * ppmP, img.height * tr.k * ppmP);
+  octx.drawImage(img, tr.ox * ppmP, tr.oy * ppmP, img.width * tr.k * ppmP, img.height * tr.k * ppmP);
   const data = octx.getImageData(0, 0, pw, ph).data;
+  const pxPerM2 = ppmP * ppmP;
 
+  const brandKey = $("brand").value;
   const colors = curBrand().colors;
   const labs = colors.map(c => srgb2lab(
     parseInt(c[2].slice(1,3),16), parseInt(c[2].slice(3,5),16), parseInt(c[2].slice(5,7),16)));
 
-  const counts = new Array(colors.length).fill(0);
-  const mapped = new Uint8ClampedArray(pw * ph * 4);
-
-  const pxPerM2 = ppmP * ppmP; // пикселей в м²
-  let used = 0;
-
-  for (let i = 0; i < pw * ph; i++){
-    const a = data[i * 4 + 3];
-    const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
-    if (a < 30) continue;
-    if (r > 240 && g > 240 && b > 240) continue; // белый фон не красим
-    let best = 0, bd = 1e12;
-    const [L, A, B] = srgb2lab(r, g, b);
-    for (let c = 0; c < labs.length; c++){
-      const d = (L - labs[c][0]) ** 2 + (A - labs[c][1]) ** 2 + (B - labs[c][2]) ** 2;
-      if (d < bd){ bd = d; best = c; }
-    }
-    counts[best]++;
-    used++;
-    // светота исходника сохраняем: масштабируем цвет палитры по яркости пикселя
-    const pr = parseInt(colors[best][2].slice(1,3),16),
-          pg = parseInt(colors[best][2].slice(3,5),16),
-          pb = parseInt(colors[best][2].slice(5,7),16);
-    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
-    const plum = (0.299*pr + 0.587*pg + 0.114*pb) / 255;
-    const f = plum > 0.02 ? lum / plum : lum;
-    mapped[i*4]   = Math.min(255, pr * f);
-    mapped[i*4+1] = Math.min(255, pg * f);
-    mapped[i*4+2] = Math.min(255, pb * f);
-    mapped[i*4+3] = 255;
-  }
-
-  if (used === 0){ showErr("Не удалось распознать эскиз в границах стены. Проверьте, что эскиз наложен на стену, и попробуйте ещё раз."); return; }
+  const res = analyze(data, pw, ph, pxPerM2, colors, labs, 1, true);
+  if (!res || res.used === 0){ showErr(t("err_nopaint")); return; }
 
   const S = SURFACES[surface];
   const factor = S.layers * S.k;
   const price = parseFloat($("price").value) || 0;
   const cov = parseFloat($("cov").value) || 1.5;
+  const CUR = curCur();
 
-  const rows = [];
-  let totalCans = 0, totalCost = 0;
-  for (let c = 0; c < colors.length; c++){
-    if (!counts[c]) continue;
-    const area = counts[c] / pxPerM2;
-    const cans = Math.ceil(area * factor / cov);
-    totalCans += cans;
-    const cost = cans * price;
-    totalCost += cost;
-    rows.push({ c, area, cans, cost });
-  }
-  rows.sort((a, b) => b.cans - a.cans);
+  const built = buildRows(res.counts, pxPerM2, factor, cov, price, colors);
+  const rows = built.rows;
 
-  let html = "<table><tr><th></th><th>Цвет</th><th>м²</th><th>Балл.</th><th>₽</th></tr>";
+  let html = "<table><tr><th></th><th>" + t("h_color") + "</th><th>м²</th><th>" + t("h_cans") + "</th><th>" + CUR + "</th></tr>";
   for (const r of rows){
     const col = colors[r.c];
     html += "<tr><td><span class='sw' style='background:" + col[2] + "'></span></td>" +
             "<td>" + col[1] + " <span style='color:var(--dim);font-size:11px'>" + col[0] + "</span></td>" +
-            "<td>" + r.area.toFixed(2) + "</td><td>" + r.cans + "</td><td>" + r.cost + "</td></tr>";
+            "<td>" + r.area.toFixed(2) + "</td><td>" + r.cans + "</td><td>" + fmt(r.cost) + "</td></tr>";
   }
   html += "</table>";
-  html += "<div class='total'>Итого: <b>" + totalCans + " баллонов</b> • <b>" + totalCost + " ₽</b><br>" +
-          "<span style='font-size:12px;color:var(--dim)'>" + S.label + " — " + S.layers + " слой(а), поправка ×" + S.k +
-          " • поверхность " + (W * H).toFixed(1) + " м²</span></div>";
+  html += "<div class='total'>" + t("total_word") + ": <b>" + built.totalCans + " " + t("cans") + "</b> • <b>" +
+          fmt(built.totalCost) + " " + CUR + "</b><br>" +
+          "<span style='font-size:12px;color:var(--dim)'>" + (surface === "smooth" ? t("s1") : t("s2")) + " — " + S.layers + " ×, ×" + S.k +
+          " • " + (W * H).toFixed(1) + " м² • " + res.painted.toFixed(1) + " м² • +10%</span></div>";
   $("resultBody").innerHTML = html;
   $("resultPanel").classList.remove("hidden");
 
-  // превью
-  const offP = document.createElement("canvas");
-  offP.width = pw; offP.height = ph;
-  offP.getContext("2d").putImageData(new ImageData(mapped, pw, ph), 0, 0);
+  /* --- превью: панель раскрываем ДО измерения ширины --- */
+  $("previewPanel").classList.remove("hidden");
   const cw = previewC.clientWidth * dpr, ch2 = cw * H / W;
   previewC.width = cw; previewC.height = ch2;
   previewC.style.height = (cw / dpr * H / W) + "px";
+  const offP = document.createElement("canvas");
+  offP.width = pw; offP.height = ph;
+  offP.getContext("2d").putImageData(new ImageData(res.mapped, pw, ph), 0, 0);
+  pctx.clearRect(0, 0, cw, ch2);
   pctx.imageSmoothingEnabled = true;
   pctx.drawImage(offP, 0, 0, cw, ch2);
-  // сетка поверх превью
+  drawGrid(pctx, W, H, cw, ch2, "rgba(0,229,255,0.30)");
+
+  /* --- плашки с кодами краски на крупных заливках --- */
   const ppmV = cw / W;
-  pctx.lineWidth = Math.max(1, dpr * 0.7);
-  for (let i = 1; i < Math.round(W); i++){
-    pctx.strokeStyle = "rgba(0,229,255,0.30)";
-    pctx.beginPath(); pctx.moveTo(i * ppmV, 0); pctx.lineTo(i * ppmV, ch2); pctx.stroke();
+  const painted = res.painted;
+  const ordered = rows.filter(r => r.area / painted >= 0.008).slice(0, 8);
+  const placed = [];
+  function drawBadge(r){
+    const c = r.c, col = colors[c], cent = res.centroids[c];
+    if (!cent.n) return;
+    const xm = cent.x / cent.n / ppmP, ym = cent.y / cent.n / ppmP;
+    const cx = xm * ppmV, cy = ym * ppmV;
+    const bw = 18 * dpr;
+    let ox = 0, oy = 0;
+    for (let t2 = 0; t2 < 24; t2++){
+      const nx = cx + ox, ny = cy + oy;
+      if (!placed.some(p => Math.abs(p[0]-nx) < bw*4 && Math.abs(p[1]-ny) < bw*2)) break;
+      ox += (t2 % 2 ? 1 : -1) * bw * Math.ceil((t2+1) / 2);
+      if (t2 % 8 === 7) oy += bw * 1.4;
+    }
+    placed.push([cx+ox, cy+oy]);
+    const bx = Math.max(4*dpr, Math.min(cx+ox - bw/2, cw - bw - 4*dpr));
+    const by = Math.max(4*dpr, Math.min(cy+oy - bw/2, ch2 - bw - 4*dpr));
+    pctx.save();
+    pctx.shadowColor = "rgba(0,0,0,.55)"; pctx.shadowBlur = 4*dpr;
+    pctx.fillStyle = col[2];
+    pctx.fillRect(bx, by, bw, bw);
+    pctx.strokeStyle = "rgba(255,255,255,.9)"; pctx.lineWidth = 1.5*dpr;
+    pctx.strokeRect(bx, by, bw, bw);
+    pctx.restore();
+    const hex = col[2];
+    const lum = (0.299*parseInt(hex.slice(1,3),16) + 0.587*parseInt(hex.slice(3,5),16) + 0.114*parseInt(hex.slice(5,7),16))/255;
+    const label = col[0] + " · " + r.area.toFixed(1) + " м²";
+    pctx.font = "bold " + (10*dpr) + "px sans-serif";
+    pctx.textBaseline = "middle";
+    pctx.lineWidth = 3*dpr; pctx.strokeStyle = "rgba(11,11,20,.85)";
+    const tw = pctx.measureText(label).width;
+    const space = cw - (bx + bw) - 6*dpr;
+    let tx = bx + bw + 5*dpr;
+    if (tw + 6*dpr > space){ tx = Math.max(4*dpr, bx - tw - 5*dpr); }
+    pctx.strokeText(label, tx, by + bw/2);
+    pctx.fillStyle = lum > 0.55 ? "#0b0b14" : "#ffffff";
+    pctx.fillText(label, tx, by + bw/2);
   }
-  for (let j = 1; j < Math.round(H); j++){
-    pctx.strokeStyle = "rgba(0,229,255,0.30)";
-    pctx.beginPath(); pctx.moveTo(0, j * ppmV); pctx.lineTo(cw, j * ppmV); pctx.stroke();
+  ordered.forEach(drawBadge);
+
+  $("previewLegend").innerHTML = rows.slice(0,12).map(r => {
+    const col = colors[r.c];
+    return "<div class='litem'><span class='sw' style='background:" + col[2] + "'></span>" +
+           "<span class='code'>" + col[0] + "</span><span>" + col[1] + "</span></div>";
+  }).join("");
+
+  /* --- сравнение бюджетов: только бренды, доступные в стране --- */
+  const cmp = [];
+  for (const key of availKeys()){
+    const b = BRANDS[key];
+    const vol = volSel[key] || Object.keys(b.volumes)[0];
+    const cols2 = b.colors;
+    const labs2 = cols2.map(c => srgb2lab(
+      parseInt(c[2].slice(1,3),16), parseInt(c[2].slice(3,5),16), parseInt(c[2].slice(5,7),16)));
+    if (key === brandKey){
+      cmp.push({ key, name:b.name, vol, cans:built.totalCans, cost:built.totalCost });
+      continue;
+    }
+    const r2 = analyze(data, pw, ph, pxPerM2, cols2, labs2, 3, false);
+    if (!r2){ continue; }
+    const built2 = buildRows(r2.counts, pxPerM2, factor, effCov(key, vol), effPrice(key, vol), cols2);
+    cmp.push({ key, name:b.name, vol, cans:built2.totalCans, cost:built2.totalCost });
   }
-  $("previewPanel").classList.remove("hidden");
+  if (cmp.length){
+    const minCost = Math.min.apply(null, cmp.map(x => x.cost));
+    let ch = "<table><tr><th>" + t("h_brand") + "</th><th>" + t("h_vol") + "</th><th>" + t("h_cans") +
+             "</th><th>" + t("h_cans") + "/" + CUR + "</th><th>" + t("h_total") + "</th></tr>";
+    for (const x of cmp){
+      ch += "<tr class='crow" + (x.cost === minCost ? " cheap" : "") + (x.key === brandKey ? " cur" : "") +
+            "' data-k='" + x.key + "'><td>" + (x.cost === minCost ? "★ " : "") + x.name + "</td><td>" + x.vol +
+            " мл</td><td>" + x.cans + "</td><td>" + fmt(x.cost / Math.max(1, x.cans)) + "</td><td>" + fmt(x.cost) + " " + CUR + "</td></tr>";
+    }
+    ch += "</table>";
+    $("compareBody").innerHTML = ch;
+    $("comparePanel").classList.remove("hidden");
+    document.querySelectorAll("#compareBody tr.crow").forEach(row => {
+      row.addEventListener("click", () => {
+        $("brand").value = row.dataset.k;
+        $("brand").dataset.last = row.dataset.k;
+        fillVols(); autoFill(); updatePalChip();
+        calc();
+      });
+    });
+  }
+
   setTimeout(() => $("resultPanel").scrollIntoView({ behavior:"smooth", block:"start" }), 60);
 });
+
+function calc(){ $("calcBtn").click(); }
 
 function showErr(msg){
   const err = $("err");
   err.textContent = msg; err.style.display = "block";
 }
 
+/* ---------- Старт ---------- */
+window.addEventListener("load", drawWall);
 drawWall();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
 </script>
 </body>
 </html>
